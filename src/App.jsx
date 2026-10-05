@@ -1,11 +1,15 @@
+import React from 'react';
+import Navbar from './components/navbar';
+import HomePage from './pages/homePage';
 
-function App() {
-  
+export default function App() {
   return (
     <div>
-      hello world
+      {/* Memuat Navbar di atas */}
+      <Navbar />
+      
+      {/* Memuat Halaman Utama */}
+      <HomePage />
     </div>
-  )
+  );
 }
-
-export default App
