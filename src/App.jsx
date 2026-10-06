@@ -1,11 +1,12 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom"; // 👈 Tambahkan BrowserRouter
+import Dashboard from "./pages/Dashboard";
 
-function App() {
-  
+export default function App() {
   return (
-    <div>
-      hello world
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
-
-export default App
