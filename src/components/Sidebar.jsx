@@ -7,11 +7,13 @@ import {
   Receipt, 
   BarChart3, 
   LogOut,
-  Store
+  Store,
+  Users
 } from "lucide-react";
 
 const menus = [
   ["/dashboard", "Dashboard", LayoutDashboard],
+  ["/user", "Kelola User", Users], // Menu Baru
   ["/kasir", "Kasir", ShoppingCart],
   ["/produk", "Produk", Package],
   ["/stok", "Stok", Boxes],
