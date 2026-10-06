@@ -15,7 +15,7 @@ const menus = [
   ["/dashboard", "Dashboard", LayoutDashboard],
   ["/user", "Kelola User", Users], // Menu Baru
   ["/kasir", "Kasir", ShoppingCart],
-  ["/produk", "Produk", Package],
+  ["/product", "Produk", Package],
   ["/stok", "Stok", Boxes],
   ["/transaksi", "Transaksi", Receipt],
   ["/laporan", "Laporan", BarChart3],
