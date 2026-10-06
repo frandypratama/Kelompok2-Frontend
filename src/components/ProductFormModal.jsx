@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 import { useState } from "react";
->>>>>>> 8e606f7 (product page)
 import Modal from "./Modal";
 import InputField from "./ui/InputField";
 
@@ -14,8 +11,6 @@ export default function ProductFormModal({
   isEdit,
   categories = [],
 }) {
-<<<<<<< HEAD
-=======
   // Helper untuk menentukan selected levels berdasarkan kategori_id
   const getInitialLevels = () => {
     if (!formData.kategori_id) return { l1: "", l2: "", l3: "" };
@@ -81,7 +76,6 @@ export default function ProductFormModal({
     setFormData((prev) => ({ ...prev, kategori_id: val || selectedLevels.l2 }));
   };
 
->>>>>>> 8e606f7 (product page)
   return (
     <Modal
       isOpen={isOpen}
@@ -89,10 +83,6 @@ export default function ProductFormModal({
       title={isEdit ? "Edit Produk" : "Tambah Produk Baru"}
     >
       <form onSubmit={onSubmit} className="space-y-4">
-<<<<<<< HEAD
-        {/* Nama Produk */}
-=======
->>>>>>> 8e606f7 (product page)
         <InputField
           label="Nama Produk"
           placeholder="Masukkan nama produk"
@@ -100,10 +90,6 @@ export default function ProductFormModal({
           onChange={(e) => setFormData({ ...formData, nama_produk: e.target.value })}
         />
 
-<<<<<<< HEAD
-        {/* Grid Harga Beli & Harga Jual */}
-=======
->>>>>>> 8e606f7 (product page)
         <div className="grid grid-cols-2 gap-3">
           <InputField
             label="Harga Beli (Rp)"
@@ -121,10 +107,6 @@ export default function ProductFormModal({
           />
         </div>
 
-<<<<<<< HEAD
-        {/* Input Stok */}
-=======
->>>>>>> 8e606f7 (product page)
         <InputField
           label="Stok"
           type="number"
@@ -133,20 +115,6 @@ export default function ProductFormModal({
           onChange={(e) => setFormData({ ...formData, stok: e.target.value })}
         />
 
-<<<<<<< HEAD
-        {/* Select Kategori */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">
-            Kategori
-          </label>
-          <select
-            value={formData.kategori_id || ""}
-            onChange={(e) => setFormData({ ...formData, kategori_id: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-          >
-            <option value="">Tanpa Kategori</option>
-            {categories.map((cat) => (
-=======
         {/* Dropdown Kategori Cascading */}
         <div className="space-y-2">
           <label className="block text-xs font-semibold text-slate-600">
@@ -161,17 +129,11 @@ export default function ProductFormModal({
           >
             <option value="">Pilih Kategori Utama (Level 1)</option>
             {level1Options.map((cat) => (
->>>>>>> 8e606f7 (product page)
               <option key={cat.id} value={cat.id}>
                 {cat.nama_kategori}
               </option>
             ))}
           </select>
-<<<<<<< HEAD
-        </div>
-
-        {/* Tombol Aksi */}
-=======
 
           {/* Level 2 */}
           {selectedLevels.l1 && level2Options.length > 0 && (
@@ -206,7 +168,6 @@ export default function ProductFormModal({
           )}
         </div>
 
->>>>>>> 8e606f7 (product page)
         <div className="pt-4 flex justify-end gap-2">
           <button
             type="button"

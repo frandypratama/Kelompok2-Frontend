@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { useState } from "react";
-=======
 import { useState, useMemo } from "react";
->>>>>>> 8e606f7 (product page)
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import Table from "../components/Table";
@@ -10,12 +6,6 @@ import ProductFormModal from "../components/ProductFormModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { Plus, Search, Pencil, Trash2 } from "lucide-react";
 
-<<<<<<< HEAD
-const dummyCategories = [
-  { id: 1, nama_kategori: "Minuman" },
-  { id: 2, nama_kategori: "Makanan" },
-  { id: 3, nama_kategori: "Snack" },
-=======
 // Data Kategori Lengkap (ID 1 - 29) sesuai gambar database
 const dummyCategories = [
   { id: 1, nama_kategori: "Fisik", parent_id: null },
@@ -47,29 +37,11 @@ const dummyCategories = [
   { id: 27, nama_kategori: "Mobile Legends", parent_id: 9 },
   { id: 28, nama_kategori: "Bank BRI", parent_id: 10 },
   { id: 29, nama_kategori: "Bank Seabank", parent_id: 10 },
->>>>>>> 8e606f7 (product page)
 ];
 
 const initialProducts = [
   {
     id: 1,
-<<<<<<< HEAD
-    nama_produk: "Kopi Susu Aren",
-    harga_beli: 10000,
-    harga_jual: 18000,
-    stok: 50,
-    kategori_id: 1,
-    kategori_nama: "Minuman",
-  },
-  {
-    id: 2,
-    nama_produk: "Roti Bakar Cokelat",
-    harga_beli: 12000,
-    harga_jual: 20000,
-    stok: 20,
-    kategori_id: 2,
-    kategori_nama: "Makanan",
-=======
     nama_produk: "Paket Data Telkomsel 10GB",
     harga_beli: 30000,
     harga_jual: 35000,
@@ -91,22 +63,17 @@ const initialProducts = [
     harga_jual: 52000,
     stok: 20,
     kategori_id: 23,
->>>>>>> 8e606f7 (product page)
   },
 ];
 
 export default function Product() {
   const [products, setProducts] = useState(initialProducts);
   const [search, setSearch] = useState("");
-<<<<<<< HEAD
-  const [filterCategory, setFilterCategory] = useState("all");
-=======
 
   // State Filter Cascading
   const [filterL1, setFilterL1] = useState("");
   const [filterL2, setFilterL2] = useState("");
   const [filterL3, setFilterL3] = useState("");
->>>>>>> 8e606f7 (product page)
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -120,12 +87,6 @@ export default function Product() {
 
   const [deleteId, setDeleteId] = useState(null);
 
-<<<<<<< HEAD
-  const filteredProducts = products.filter((p) => {
-    const matchSearch = p.nama_produk.toLowerCase().includes(search.toLowerCase());
-    const matchCategory =
-      filterCategory === "all" || String(p.kategori_id) === String(filterCategory);
-=======
   // Helper mendapatkan nama kategori berdasarkan ID
   const getCategoryName = (catId) => {
     const found = dummyCategories.find((c) => String(c.id) === String(catId));
@@ -170,7 +131,6 @@ export default function Product() {
       matchCategory = allowedIds.includes(Number(p.kategori_id));
     }
 
->>>>>>> 8e606f7 (product page)
     return matchSearch && matchCategory;
   });
 
@@ -200,22 +160,6 @@ export default function Product() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-<<<<<<< HEAD
-    const catName =
-      dummyCategories.find((c) => String(c.id) === String(formData.kategori_id))
-        ?.nama_kategori || "-";
-
-    if (selectedProduct) {
-      setProducts(
-        products.map((p) =>
-          p.id === selectedProduct.id
-            ? { ...p, ...formData, kategori_nama: catName }
-            : p
-        )
-      );
-    } else {
-      setProducts([...products, { id: Date.now(), ...formData, kategori_nama: catName }]);
-=======
     if (selectedProduct) {
       setProducts(
         products.map((p) =>
@@ -224,7 +168,6 @@ export default function Product() {
       );
     } else {
       setProducts([...products, { id: Date.now(), ...formData }]);
->>>>>>> 8e606f7 (product page)
     }
     setIsModalOpen(false);
   };
@@ -234,10 +177,6 @@ export default function Product() {
     setDeleteId(null);
   };
 
-<<<<<<< HEAD
-  // Kolom No menggunakan index baris (index + 1)
-=======
->>>>>>> 8e606f7 (product page)
   const columns = [
     {
       header: "No",
@@ -248,11 +187,7 @@ export default function Product() {
     { header: "Nama Produk", key: "nama_produk" },
     {
       header: "Kategori",
-<<<<<<< HEAD
-      render: (row) => row.kategori_nama || "-",
-=======
       render: (row) => getCategoryName(row.kategori_id),
->>>>>>> 8e606f7 (product page)
     },
     {
       header: "Harga Beli",
@@ -294,12 +229,8 @@ export default function Product() {
         <Navbar title="Kelola Produk" />
 
         <div className="p-6 md:p-8 space-y-6">
-<<<<<<< HEAD
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 justify-between items-center">
-=======
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-3 justify-between items-center">
             {/* Search Bar */}
->>>>>>> 8e606f7 (product page)
             <div className="relative flex-1 w-full">
               <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -311,18 +242,6 @@ export default function Product() {
               />
             </div>
 
-<<<<<<< HEAD
-            <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-              >
-                <option value="all">Semua Kategori</option>
-                {dummyCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.nama_kategori}
-=======
             {/* Cascading Filter Kategori */}
             <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
               {/* Level 1 Filter */}
@@ -339,13 +258,10 @@ export default function Product() {
                 {level1Options.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.nama_kategori}
->>>>>>> 8e606f7 (product page)
                   </option>
                 ))}
               </select>
 
-<<<<<<< HEAD
-=======
               {/* Level 2 Filter */}
               {level2Options.length > 0 && (
                 <select
@@ -381,7 +297,6 @@ export default function Product() {
                 </select>
               )}
 
->>>>>>> 8e606f7 (product page)
               <button
                 onClick={handleOpenAddModal}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors cursor-pointer whitespace-nowrap"

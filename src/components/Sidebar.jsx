@@ -8,14 +8,16 @@ import {
   BarChart3, 
   LogOut,
   Store,
-  Users
+  Users,
+  Layers
 } from "lucide-react";
 
 const menus = [
   ["/dashboard", "Dashboard", LayoutDashboard],
-  ["/user", "Kelola User", Users], // Menu Baru
-  ["/kasir", "Kasir", ShoppingCart],
+  ["/user", "Kelola User", Users],
+  ["/category", "Kategori", Layers],
   ["/product", "Produk", Package],
+  ["/kasir", "Kasir", ShoppingCart],
   ["/stok", "Stok", Boxes],
   ["/transaksi", "Transaksi", Receipt],
   ["/laporan", "Laporan", BarChart3],
