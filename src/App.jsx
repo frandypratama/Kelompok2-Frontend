@@ -1,15 +1,15 @@
 import React from 'react';
-import Navbar from './components/navbar';
+import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/homePage';
+import ProductPage from './pages/productPage'; // Pastikan penamaan huruf besar/kecil file sesuai (productPage.jsx)
 
-export default function App() {
+function App() {
   return (
-    <div>
-      {/* Memuat Navbar di atas */}
-      <Navbar />
-      
-      {/* Memuat Halaman Utama */}
-      <HomePage />
-    </div>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/product" element={<ProductPage />} />
+    </Routes>
   );
 }
+
+export default App;
