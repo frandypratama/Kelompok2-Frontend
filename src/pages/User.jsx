@@ -1,24 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import Table from "../components/Table";
 import UserFormModal from "../components/UserFormModal";
 import ConfirmModal from "../components/ConfirmModal";
-import { UserPlus, Search, Pencil, Trash2 } from "lucide-react";
-
-const initialUsers = [
-  { id: 1, nama: "Taqi Developer", username: "taqi", password: "password123", role: "admin" },
-  { id: 2, nama: "Budi Kasir", username: "budikasir", password: "kasirpassword", role: "kasir" },
-  { id: 3, nama: "Siti Manajer", username: "sitimanajer", password: "manajerpass", role: "manajer" },
-];
+import { UserPlus, Search, Pencil, Trash2, Loader2 } from "lucide-react";
+import {
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+} from "../services/userService";
 
 export default function User() {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     nama: "",
     username: "",
@@ -27,11 +32,35 @@ export default function User() {
   });
 
   const [deleteId, setDeleteId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
+  // ==========================================
+  // FETCH DATA USERS (Pola sesuai Kategori.jsx)
+  // ==========================================
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        setError("");
+        const response = await getUsers();
+        // Response backend: { message: "...", data: [...] }
+        setUsers(response.data || []);
+      } catch (err) {
+        console.error("Gagal mengambil data user:", err);
+        setError("Gagal memuat data user dari server.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [refreshKey]);
+
+  // Filter pencarian dan role
   const filteredUsers = users.filter((u) => {
     const matchSearch =
-      u.nama.toLowerCase().includes(search.toLowerCase()) ||
-      u.username.toLowerCase().includes(search.toLowerCase());
+      (u.nama || "").toLowerCase().includes(search.toLowerCase()) ||
+      (u.username || "").toLowerCase().includes(search.toLowerCase());
     const matchRole = filterRole === "all" || u.role === filterRole;
     return matchSearch && matchRole;
   });
@@ -45,27 +74,66 @@ export default function User() {
   const handleOpenEditModal = (user) => {
     setSelectedUser(user);
     setFormData({
-      nama: user.nama,
-      username: user.username,
-      password: user.password,
-      role: user.role,
+      nama: user.nama || "",
+      username: user.username || "",
+      password: "", // Kosongkan password saat edit agar tidak terisi otomatis
+      role: user.role || "kasir",
     });
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e) => {
+  // ==========================================
+  // HANDLER SUBMIT (CREATE & UPDATE)
+  // ==========================================
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (selectedUser) {
-      setUsers(users.map((u) => (u.id === selectedUser.id ? { ...u, ...formData } : u)));
-    } else {
-      setUsers([...users, { id: Date.now(), ...formData }]);
+    try {
+      setSubmitting(true);
+
+      if (selectedUser) {
+        // Mode Update
+        const payload = { ...formData };
+        // Jika password diisi kosong saat edit, hapus dari payload agar password di DB tidak ter-overwrite
+        if (!payload.password) {
+          delete payload.password;
+        }
+        await updateUser(selectedUser.id, payload);
+      } else {
+        // Mode Create
+        await createUser(formData);
+      }
+
+      setIsModalOpen(false);
+      setRefreshKey((key) => key + 1);
+    } catch (err) {
+      console.error("Gagal menyimpan user:", err);
+      alert(
+        err.response?.data?.message || "Terjadi kesalahan saat menyimpan data."
+      );
+    } finally {
+      setSubmitting(false);
     }
-    setIsModalOpen(false);
   };
 
-  const handleConfirmDelete = () => {
-    setUsers(users.filter((u) => u.id !== deleteId));
-    setDeleteId(null);
+  // ==========================================
+  // HANDLER DELETE USER
+  // ==========================================
+  const handleConfirmDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      setDeleting(true);
+      await deleteUser(deleteId);
+      setDeleteId(null);
+      setRefreshKey((key) => key + 1);
+    } catch (err) {
+      console.error("Gagal menghapus user:", err);
+      alert(
+        err.response?.data?.message || "Gagal menghapus user."
+      );
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const columns = [
@@ -105,13 +173,13 @@ export default function User() {
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => handleOpenEditModal(row)}
-            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
           >
             <Pencil size={17} />
           </button>
           <button
             onClick={() => setDeleteId(row.id)}
-            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
           >
             <Trash2 size={17} />
           </button>
@@ -125,11 +193,9 @@ export default function User() {
       <Sidebar />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        {/* Navbar Atas Tetap Menampilkan Judul Page */}
         <Navbar title="Kelola User" />
 
         <div className="p-6 md:p-8 space-y-6">
-          {/* Filter Bar + Tombol Tambah User Sejajar */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 justify-between items-center">
             <div className="relative flex-1 w-full">
               <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -164,11 +230,24 @@ export default function User() {
             </div>
           </div>
 
-          <Table
-            columns={columns}
-            rows={filteredUsers}
-            empty="Tidak ada data user yang ditemukan."
-          />
+          {error && (
+            <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl">
+              {error}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="bg-white p-12 rounded-xl border border-slate-200 text-center flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              <p className="text-sm text-slate-500">Memuat data user...</p>
+            </div>
+          ) : (
+            <Table
+              columns={columns}
+              rows={filteredUsers}
+              empty="Tidak ada data user yang ditemukan."
+            />
+          )}
         </div>
       </main>
 
@@ -179,6 +258,7 @@ export default function User() {
         formData={formData}
         setFormData={setFormData}
         isEdit={!!selectedUser}
+        submitting={submitting}
       />
 
       <ConfirmModal
@@ -187,6 +267,7 @@ export default function User() {
         onConfirm={handleConfirmDelete}
         title="Hapus User Ini?"
         message="Tindakan ini tidak dapat dibatalkan. Akun ini akan dihapus permanen."
+        loading={deleting}
       />
     </div>
   );
