@@ -21,11 +21,11 @@ export default function HomePage() {
         {/* Kolom Kiri: Teks & Aksi */}
         <div className="space-y-6">
           <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-semibold tracking-wide">
-            <span>Sistem Kasir Konter & PPOB Terpadu</span>
+            <span>Sistem Kasir Konter Terpadu</span>
           </div>
 
           <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight text-gray-900">
-            Kelola Konter & PPOB Anda <span className="text-blue-600">Lebih Cepat</span> & Akurat
+            Kelola Konter Anda <span className="text-blue-600">Lebih Cepat</span> & Akurat
           </h1>
 
           <p className="text-gray-600 text-base leading-relaxed">
@@ -59,10 +59,10 @@ export default function HomePage() {
 
         {/* Kolom Kanan: Gambar & Floating Card */}
         <div className="relative flex justify-center">
-          <div className="relative w-full max-w-md lg:max-w-none rounded-3xl overflow-hidden shadow-2xl">
+          <div className="relative w-full max-w-md lg:l rounded-3xl overflow-hidden shadow-2xl">
             <img 
-              src="https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=800&q=80"
-              alt="Konter Pulsa dan Aksesoris HP Modern" 
+              src="https://refrez.com/wp-content/uploads/2023/08/konter-pulsa-760x760.png"
+              alt="konter dan Aksesoris HP Modern" 
               className="w-full h-450px object-cover"
             />
           </div>
@@ -73,8 +73,8 @@ export default function HomePage() {
       {/* 2. FITUR UNGGULAN */}
       <section className="bg-gray-50/50 py-20 border-t border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 text-center space-y-3 mb-12">
-          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">Fitur Unggulan Postify</h2>
-          <p className="text-gray-500 text-sm">Dirancang khusus untuk kebutuhan operasional konter pulsa dan PPOB.</p>
+          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">Fitur Unggulan Posify</h2>
+          <p className="text-gray-500 text-sm">Dirancang khusus untuk kebutuhan operasional konter.</p>
         </div>
 
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -95,7 +95,7 @@ export default function HomePage() {
             <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
               <Smartphone size={24} />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Produk Digital & PPOB</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Produk Digital</h3>
             <p className="text-sm text-gray-600 leading-relaxed">
               Mendukung penjualan pulsa Telkomsel, Tri, Axis, Token PLN, E-Wallet, hingga transfer bank.
             </p>
@@ -151,7 +151,7 @@ export default function HomePage() {
       {/* 3. LAYANAN & KATEGORI PRODUK */}
       <section className="py-16 max-w-7xl mx-auto px-6 text-center space-y-8">
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-gray-900">Kategori & Layanan Postify</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Kategori & Layanan Posify</h2>
           <p className="text-gray-500 text-sm">Menyediakan produk fisik terlengkap dan produk digital instan.</p>
         </div>
 
@@ -180,7 +180,7 @@ export default function HomePage() {
       <section className="max-w-7xl mx-auto px-6 pb-20">
         <div className="bg-linear-to-r from-blue-600 to-blue-700 rounded-3xl p-10 text-center text-white space-y-6 shadow-xl shadow-blue-600/20">
           <div className="space-y-2 max-w-xl mx-auto">
-            <h2 className="text-2xl lg:text-3xl font-bold">Siap Optimalkan Bisnis Konter Anda Bersama Postify?</h2>
+            <h2 className="text-2xl lg:text-3xl font-bold">Siap Optimalkan Bisnis Konter Anda Bersama Posify?</h2>
             <p className="text-blue-100 text-sm leading-relaxed">
               Tingkatkan kecepatan pelayanan transaksi digital dan kontrol stok fisik konter Anda sekarang juga.
             </p>
