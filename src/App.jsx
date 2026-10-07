@@ -7,7 +7,7 @@ import Product from "./pages/Product";
 import Category from "./pages/Category";
 import HomePage from "./pages/homePage";
 
-export default function App() {
+function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
@@ -19,3 +19,5 @@ export default function App() {
     </Routes>
   );
 }
+
+export default App;
