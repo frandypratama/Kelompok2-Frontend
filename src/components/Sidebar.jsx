@@ -17,7 +17,7 @@ const menus = [
   ["/user", "Kelola User", Users],
   ["/category", "Kategori", Layers],
   ["/product", "Produk", Package],
-  ["/kasir", "Kasir", ShoppingCart],
+  ["/pos", "Kasir", ShoppingCart],
   ["/stok", "Stok", Boxes],
   ["/transaksi", "Transaksi", Receipt],
   ["/laporan", "Laporan", BarChart3],

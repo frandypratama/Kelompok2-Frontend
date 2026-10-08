@@ -25,7 +25,7 @@ export default function User() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    nama: "",
+    name: "",
     username: "",
     password: "",
     role: "kasir",
@@ -59,7 +59,7 @@ export default function User() {
   // Filter pencarian dan role
   const filteredUsers = users.filter((u) => {
     const matchSearch =
-      (u.nama || "").toLowerCase().includes(search.toLowerCase()) ||
+      (u.name || "").toLowerCase().includes(search.toLowerCase()) ||
       (u.username || "").toLowerCase().includes(search.toLowerCase());
     const matchRole = filterRole === "all" || u.role === filterRole;
     return matchSearch && matchRole;
@@ -67,14 +67,14 @@ export default function User() {
 
   const handleOpenAddModal = () => {
     setSelectedUser(null);
-    setFormData({ nama: "", username: "", password: "", role: "kasir" });
+    setFormData({ name: "", username: "", password: "", role: "kasir" });
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (user) => {
     setSelectedUser(user);
     setFormData({
-      nama: user.nama || "",
+      name: user.name || "",
       username: user.username || "",
       password: "", // Kosongkan password saat edit agar tidak terisi otomatis
       role: user.role || "kasir",
@@ -143,7 +143,7 @@ export default function User() {
       className: "w-16 text-center",
       tdClassName: "text-center font-medium text-slate-500",
     },
-    { header: "Nama Lengkap", key: "nama" },
+    { header: "Nama Lengkap", key: "name" },
     { header: "Username", key: "username" },
     {
       header: "Password",
