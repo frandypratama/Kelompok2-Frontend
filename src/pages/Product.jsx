@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import Table from "../components/Table";
 import ProductFormModal from "../components/ProductFormModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { getProducts, createProduct, updateProduct, deleteProduct } from "../services/productService";
 
-// Data Kategori Lengkap (ID 1 - 29) sesuai gambar database
+// Data Kategori tetap menggunakan dummyCategories agar dropdown dan helper tidak berubah[cite: 3, 17]
 const dummyCategories = [
   { id: 1, nama_kategori: "Fisik", parent_id: null },
   { id: 2, nama_kategori: "Digital", parent_id: null },
@@ -39,38 +40,11 @@ const dummyCategories = [
   { id: 29, nama_kategori: "Bank Seabank", parent_id: 10 },
 ];
 
-const initialProducts = [
-  {
-    id: 1,
-    nama_produk: "Paket Data Telkomsel 10GB",
-    harga_beli: 30000,
-    harga_jual: 35000,
-    stok: 100,
-    kategori_id: 11,
-  },
-  {
-    id: 2,
-    nama_produk: "Pulsa Telkomsel 20k",
-    harga_beli: 20000,
-    harga_jual: 22000,
-    stok: 50,
-    kategori_id: 19,
-  },
-  {
-    id: 3,
-    nama_produk: "Top Up Gopay 50k",
-    harga_beli: 50000,
-    harga_jual: 52000,
-    stok: 20,
-    kategori_id: 23,
-  },
-];
-
 export default function Product() {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
 
-  // State Filter Cascading
+  // State Filter Cascading[cite: 3, 17]
   const [filterL1, setFilterL1] = useState("");
   const [filterL2, setFilterL2] = useState("");
   const [filterL3, setFilterL3] = useState("");
@@ -87,13 +61,41 @@ export default function Product() {
 
   const [deleteId, setDeleteId] = useState(null);
 
-  // Helper mendapatkan nama kategori berdasarkan ID
+  // Ambil data produk langsung dari database saat komponen dimuat
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const prodRes = await getProducts();
+      const productList = Array.isArray(prodRes) 
+        ? prodRes 
+        : (Array.isArray(prodRes.data) ? prodRes.data : (prodRes.data?.data || []));
+      
+      // Memetakan kolom database agar sesuai dengan state frontend (nama_produk, harga_beli, dll)
+      const mapped = productList.map(p => ({
+        id: p.id,
+        nama_produk: p.product_name || p.nama_produk,
+        harga_beli: p.purchase_price !== undefined ? p.purchase_price : p.harga_beli,
+        harga_jual: p.selling_price !== undefined ? p.selling_price : p.harga_jual,
+        stok: p.stock !== undefined ? p.stock : p.stok,
+        kategori_id: p.category_id !== undefined ? p.category_id : p.kategori_id,
+      }));
+
+      setProducts(mapped);
+    } catch (error) {
+      console.error("Gagal memuat produk dari database:", error);
+    }
+  };
+
+  // Helper mendapatkan nama kategori berdasarkan ID[cite: 3, 17]
   const getCategoryName = (catId) => {
     const found = dummyCategories.find((c) => String(c.id) === String(catId));
     return found ? found.nama_kategori : "-";
   };
 
-  // Helper untuk mengambil semua ID anak/cucu secara rekursif
+  // Helper untuk mengambil semua ID anak/cucu secara rekursif[cite: 3, 17]
   const getAllChildCategoryIds = (parentId) => {
     let ids = [Number(parentId)];
     const children = dummyCategories.filter((c) => c.parent_id === Number(parentId));
@@ -103,7 +105,7 @@ export default function Product() {
     return ids;
   };
 
-  // Opsi Dropdown Filter Bertingkat
+  // Opsi Dropdown Filter Bertingkat[cite: 3, 17]
   const level1Options = useMemo(
     () => dummyCategories.filter((c) => c.parent_id === null),
     []
@@ -119,7 +121,7 @@ export default function Product() {
     return dummyCategories.filter((c) => c.parent_id === Number(filterL2));
   }, [filterL2]);
 
-  // Filter Produk
+  // Filter Produk[cite: 3, 17]
   const filteredProducts = products.filter((p) => {
     const matchSearch = p.nama_produk.toLowerCase().includes(search.toLowerCase());
 
@@ -158,23 +160,40 @@ export default function Product() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
+       
     e.preventDefault();
-    if (selectedProduct) {
-      setProducts(
-        products.map((p) =>
-          p.id === selectedProduct.id ? { ...p, ...formData } : p
-        )
-      );
-    } else {
-      setProducts([...products, { id: Date.now(), ...formData }]);
+    
+    try {
+      const payload = {
+        product_name: formData.product_name,
+        purchase_price: Number(formData.purchase_price),
+        selling_price: Number(formData.selling_price),
+        stock: Number(formData.stock),
+        category_id: Number(formData.category_id),
+      };
+      // console.log("ata",payload); untuk menampilkan data terkirim dari form 
+
+      if (selectedProduct) {
+        await updateProduct(selectedProduct.id, payload);
+      } else {
+        await createProduct(payload);
+      }
+      setIsModalOpen(false);
+      fetchProducts();
+    } catch (error) {
+      console.error("Gagal menyimpan produk:", error);
     }
-    setIsModalOpen(false);
   };
 
-  const handleConfirmDelete = () => {
-    setProducts(products.filter((p) => p.id !== deleteId));
-    setDeleteId(null);
+  const handleConfirmDelete = async () => {
+    try {
+      await deleteProduct(deleteId);
+      setDeleteId(null);
+      fetchProducts();
+    } catch (error) {
+      console.error("Gagal menghapus produk:", error);
+    }
   };
 
   const columns = [
@@ -206,13 +225,13 @@ export default function Product() {
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => handleOpenEditModal(row)}
-            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
           >
             <Pencil size={17} />
           </button>
           <button
             onClick={() => setDeleteId(row.id)}
-            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
           >
             <Trash2 size={17} />
           </button>
@@ -242,7 +261,7 @@ export default function Product() {
               />
             </div>
 
-            {/* Cascading Filter Kategori */}
+            {/* Cascading Filter Kategori (Logika dropdown dipertahankan utuh)[cite: 3, 17] */}
             <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
               {/* Level 1 Filter */}
               <select
@@ -252,7 +271,7 @@ export default function Product() {
                   setFilterL2("");
                   setFilterL3("");
                 }}
-                className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
               >
                 <option value="">Semua Kategori</option>
                 {level1Options.map((c) => (
@@ -270,7 +289,7 @@ export default function Product() {
                     setFilterL2(e.target.value);
                     setFilterL3("");
                   }}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
                 >
                   <option value="">Semua Sub-Kategori</option>
                   {level2Options.map((c) => (
@@ -286,7 +305,7 @@ export default function Product() {
                 <select
                   value={filterL3}
                   onChange={(e) => setFilterL3(e.target.value)}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
                 >
                   <option value="">Semua Sub-Sub-Kategori</option>
                   {level3Options.map((c) => (
