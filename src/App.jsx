@@ -6,6 +6,7 @@ import User from "./pages/User";
 import Product from "./pages/Product";
 import Category from "./pages/Category";
 import HomePage from "./pages/homePage";
+import LaporanPenjualan from "./pages/LaporanPenjualan";
 
 function App() {
   return (
@@ -16,6 +17,8 @@ function App() {
       <Route path="/user" element={<User />} />
       <Route path="/product" element={<Product />} />
       <Route path="/category" element={<Category />} />
+      <Route path="/laporan" element={<LaporanPenjualan />}/>
+      <Route path="/laporan-penjualan" element={<LaporanPenjualan />}/>
     </Routes>
   );
 }

@@ -1,3 +1,4 @@
+//Kelompok2-Frontend\src\pages\Product.jsx
 import { useState, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
