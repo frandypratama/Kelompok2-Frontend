@@ -7,6 +7,7 @@ import Product from "./pages/Product";
 import Category from "./pages/Category";
 import HomePage from "./pages/homePage";
 import Pos from "./pages/Pos";
+import TransactionHistory from "./pages/TransactionHistory";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
       <Route path="/product" element={<Product />} />
       <Route path="/category" element={<Category />} />
       <Route path="/pos" element={<Pos />} />
+      <Route path="/transactions" element={<TransactionHistory />} />
     </Routes>
   );
 }
