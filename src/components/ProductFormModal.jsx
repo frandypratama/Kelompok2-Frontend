@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Modal from "./Modal";
 import InputField from "./ui/InputField";
 
@@ -11,11 +11,11 @@ export default function ProductFormModal({
   isEdit,
   categories = [],
 }) {
-  // Helper untuk menentukan selected levels berdasarkan kategori_id
+  // Helper untuk menentukan selected levels berdasarkan category_id
   const getInitialLevels = () => {
-    if (!formData.kategori_id) return { l1: "", l2: "", l3: "" };
+    if (!formData.category_id) return { l1: "", l2: "", l3: "" };
 
-    const catId = Number(formData.kategori_id);
+    const catId = Number(formData.category_id);
     const currentCat = categories.find((c) => Number(c.id) === catId);
 
     if (!currentCat) return { l1: "", l2: "", l3: "" };
@@ -41,8 +41,14 @@ export default function ProductFormModal({
     };
   };
 
-  // State awal dikomputasi langsung dari props
   const [selectedLevels, setSelectedLevels] = useState(() => getInitialLevels());
+
+  // Sinkronisasi ulang state level ketika modal dibuka/diedit
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedLevels(getInitialLevels());
+    }
+  }, [isOpen, formData.category_id]);
 
   // Filter Opsi Berdasarkan Level
   const level1Options = categories.filter(
@@ -61,19 +67,19 @@ export default function ProductFormModal({
   const handleL1Change = (e) => {
     const val = e.target.value;
     setSelectedLevels({ l1: val, l2: "", l3: "" });
-    setFormData((prev) => ({ ...prev, kategori_id: val }));
+    setFormData((prev) => ({ ...prev, category_id: val }));
   };
 
   const handleL2Change = (e) => {
     const val = e.target.value;
     setSelectedLevels((prev) => ({ ...prev, l2: val, l3: "" }));
-    setFormData((prev) => ({ ...prev, kategori_id: val || selectedLevels.l1 }));
+    setFormData((prev) => ({ ...prev, category_id: val || selectedLevels.l1 }));
   };
 
   const handleL3Change = (e) => {
     const val = e.target.value;
     setSelectedLevels((prev) => ({ ...prev, l3: val }));
-    setFormData((prev) => ({ ...prev, kategori_id: val || selectedLevels.l2 }));
+    setFormData((prev) => ({ ...prev, category_id: val || selectedLevels.l2 }));
   };
 
   return (
@@ -84,10 +90,12 @@ export default function ProductFormModal({
     >
       <form onSubmit={onSubmit} className="space-y-4">
         <InputField
-          label="Nama Produk"
+          label="Nama Produkfdgfd"
           placeholder="Masukkan nama produk"
-          value={formData.nama_produk}
-          onChange={(e) => setFormData({ ...formData, nama_produk: e.target.value })}
+          value={formData.product_name}
+          onChange={(e) =>
+            setFormData({ ...formData, product_name: e.target.value })
+          }
         />
 
         <div className="grid grid-cols-2 gap-3">
@@ -95,15 +103,19 @@ export default function ProductFormModal({
             label="Harga Beli (Rp)"
             type="number"
             placeholder="10000"
-            value={formData.harga_beli}
-            onChange={(e) => setFormData({ ...formData, harga_beli: e.target.value })}
+            value={formData.purchase_price}
+            onChange={(e) =>
+              setFormData({ ...formData, purchase_price: e.target.value })
+            }
           />
           <InputField
             label="Harga Jual (Rp)"
             type="number"
             placeholder="15000"
-            value={formData.harga_jual}
-            onChange={(e) => setFormData({ ...formData, harga_jual: e.target.value })}
+            value={formData.selling_price}
+            onChange={(e) =>
+              setFormData({ ...formData, selling_price: e.target.value })
+            }
           />
         </div>
 
@@ -111,8 +123,10 @@ export default function ProductFormModal({
           label="Stok"
           type="number"
           placeholder="0"
-          value={formData.stok}
-          onChange={(e) => setFormData({ ...formData, stok: e.target.value })}
+          value={formData.stock}
+          onChange={(e) =>
+            setFormData({ ...formData, stock: e.target.value })
+          }
         />
 
         {/* Dropdown Kategori Cascading */}
@@ -125,12 +139,12 @@ export default function ProductFormModal({
           <select
             value={selectedLevels.l1}
             onChange={handleL1Change}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
           >
             <option value="">Pilih Kategori Utama (Level 1)</option>
             {level1Options.map((cat) => (
               <option key={cat.id} value={cat.id}>
-                {cat.nama_kategori}
+                {cat.category_name || cat.nama_kategori}
               </option>
             ))}
           </select>
@@ -140,12 +154,12 @@ export default function ProductFormModal({
             <select
               value={selectedLevels.l2}
               onChange={handleL2Change}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
             >
               <option value="">Pilih Sub-Kategori (Level 2)</option>
               {level2Options.map((cat) => (
                 <option key={cat.id} value={cat.id}>
-                  {cat.nama_kategori}
+                  {cat.category_name || cat.nama_kategori}
                 </option>
               ))}
             </select>
@@ -156,12 +170,12 @@ export default function ProductFormModal({
             <select
               value={selectedLevels.l3}
               onChange={handleL3Change}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
             >
               <option value="">Pilih Sub-Sub-Kategori (Level 3)</option>
               {level3Options.map((cat) => (
                 <option key={cat.id} value={cat.id}>
-                  {cat.nama_kategori}
+                  {cat.category_name || cat.nama_kategori}
                 </option>
               ))}
             </select>
@@ -172,13 +186,13 @@ export default function ProductFormModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
           >
             Batal
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition-colors shadow-sm"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg transition-colors shadow-sm cursor-pointer"
           >
             Simpan
           </button>

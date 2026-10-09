@@ -41,7 +41,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 pt-4 text-sm text-gray-600 font-medium">
+          <div className="flex flex-wrap items-center gap-6 pt-4 tex t-sm text-gray-600 font-medium">
             <div className="flex items-center gap-2">
               <CheckCircle2 size={18} className="text-emerald-500" />
               <span>Multi-Role (Owner/Admin/Kasir)</span>
