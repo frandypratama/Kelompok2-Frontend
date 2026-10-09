@@ -8,6 +8,7 @@ import Category from "./pages/Category";
 import HomePage from "./pages/homePage";
 import Pos from "./pages/Pos";
 import TransactionHistory from "./pages/TransactionHistory";
+import LaporanPenjualan from "./pages/LaporanPenjualan";
 
 function App() {
   return (
@@ -20,6 +21,8 @@ function App() {
       <Route path="/category" element={<Category />} />
       <Route path="/pos" element={<Pos />} />
       <Route path="/transactions" element={<TransactionHistory />} />
+      <Route path="/laporan" element={<LaporanPenjualan />}/>
+      <Route path="/laporan-penjualan" element={<LaporanPenjualan />}/>
     </Routes>
   );
 }
