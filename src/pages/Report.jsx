@@ -27,7 +27,6 @@ export default function LaporanPenjualan() {
       setLoading(true);
       setError("");
 
-      // api.js sudah memiliki baseURL /api
       const response = await api.get("/transactions");
       const data = Array.isArray(response.data)
         ? response.data
@@ -52,11 +51,6 @@ export default function LaporanPenjualan() {
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((trx) => {
-      // Laporan hanya menghitung transaksi yang sudah dibayar.
-      if (String(trx.status || "").toLowerCase() !== "paid") {
-        return false;
-      }
-
       const createdAt = new Date(trx.createdAt);
 
       if (startDate) {
@@ -72,7 +66,7 @@ export default function LaporanPenjualan() {
       const keyword = search.toLowerCase().trim();
       if (!keyword) return true;
 
-      const invoice = String(trx.invoice || "").toLowerCase();
+      const invoice = String(trx.invoice_no || "").toLowerCase();
       const cashier = String(
         trx.User?.name || trx.user?.name || trx.cashier?.name || "",
       ).toLowerCase();
@@ -86,17 +80,13 @@ export default function LaporanPenjualan() {
     let totalItem = 0;
 
     filteredTransactions.forEach((trx) => {
-      totalPenjualan += Number(trx.total || 0);
+      totalPenjualan += Number(trx.total_price || 0);
 
-      const items =
-        trx.TransactionItems ||
-        trx.transactionItems ||
-        trx.TransactionItem ||
-        [];
+      const items = trx.details || [];
 
       if (Array.isArray(items)) {
         items.forEach((item) => {
-          totalItem += Number(item.qty || 0);
+          totalItem += Number(item.quantity || 0);
         });
       }
     });
@@ -120,7 +110,6 @@ export default function LaporanPenjualan() {
 
   const formatDate = (date) => {
     if (!date) return "-";
-
     const parsedDate = new Date(date);
     if (Number.isNaN(parsedDate.getTime())) return "-";
 
@@ -152,30 +141,23 @@ export default function LaporanPenjualan() {
       "Kasir",
       "Item",
       "Total",
-      "Pembayaran",
       "Status",
     ];
 
     const rows = filteredTransactions.map((trx, index) => {
-      const items =
-        trx.TransactionItems ||
-        trx.transactionItems ||
-        trx.TransactionItem ||
-        [];
-
+      const items = trx.details || [];
       const totalItems = Array.isArray(items)
-        ? items.reduce((sum, item) => sum + Number(item.qty || 0), 0)
+        ? items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
         : 0;
 
       return [
         index + 1,
-        trx.invoice || "-",
+        trx.invoice_no || "-",
         formatDate(trx.createdAt),
-        trx.User?.name || trx.user?.name || trx.cashier?.name || "-",
+        trx.User?.name || "Kasir",
         totalItems,
-        trx.total || 0,
-        trx.payment_method || "-",
-        trx.status || "-",
+        trx.total_price || 0,
+        trx.status || "completed",
       ];
     });
 
@@ -204,11 +186,17 @@ export default function LaporanPenjualan() {
     URL.revokeObjectURL(url);
   };
 
-  const printReport = () => window.print();
+  // Fungsi Cetak Khusus Laporan (Clean Print)
+  const printReport = () => {
+    window.print();
+  };
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-800 antialiased">
-      <Sidebar />
+      {/* Sidebar disembunyikan saat dicetak menggunakan class Tailwind 'print:hidden' */}
+      <div className="print:hidden">
+        <Sidebar />
+      </div>
 
       <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
         <div className="print:hidden">
@@ -216,7 +204,15 @@ export default function LaporanPenjualan() {
         </div>
 
         <div className="space-y-6 p-6 md:p-8">
-          {/* HEADER */}
+          {/* KOP LAPORAN KHUSUS CETAK (Hanya muncul saat print) */}
+          <div className="hidden print:block mb-6 text-center border-b pb-4">
+            <h1 className="text-xl font-bold uppercase text-slate-900">POSify - Laporan Penjualan & Keuangan</h1>
+            <p className="text-xs text-slate-600 mt-1">
+              Periode Filter: {startDate || "Semua"} s/d {endDate || "Semua"} | Dicetak pada: {new Date().toLocaleString("id-ID")}
+            </p>
+          </div>
+
+          {/* HEADER (Tombol aksi disembunyikan saat print) */}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between print:hidden">
             <div>
               <h1 className="text-2xl font-bold text-slate-800">
@@ -231,7 +227,7 @@ export default function LaporanPenjualan() {
               <button
                 onClick={loadTransactions}
                 disabled={loading}
-                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
               >
                 <RefreshCw
                   size={17}
@@ -253,12 +249,12 @@ export default function LaporanPenjualan() {
                 className="flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
               >
                 <Printer size={17} />
-                Cetak
+                Cetak Laporan
               </button>
             </div>
           </div>
 
-          {/* FILTER */}
+          {/* FILTER (Disembunyikan saat print) */}
           <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:hidden">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="lg:col-span-2">
@@ -275,7 +271,7 @@ export default function LaporanPenjualan() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Cari invoice atau nama kasir..."
-                    className="w-full rounded-lg border border-slate-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    className="w-full rounded-lg border border-slate-200 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -284,36 +280,24 @@ export default function LaporanPenjualan() {
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Dari tanggal
                 </label>
-                <div className="relative">
-                  <CalendarDays
-                    size={17}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  />
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-blue-500"
-                  />
-                </div>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 py-2.5 px-3 text-sm outline-none focus:border-blue-500"
+                />
               </div>
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   Sampai tanggal
                 </label>
-                <div className="relative">
-                  <CalendarDays
-                    size={17}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  />
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-blue-500"
-                  />
-                </div>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 py-2.5 px-3 text-sm outline-none focus:border-blue-500"
+                />
               </div>
             </div>
 
@@ -329,7 +313,7 @@ export default function LaporanPenjualan() {
             )}
           </section>
 
-          {/* SUMMARY */}
+          {/* SUMMARY CARDS */}
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <SummaryCard
               title="Total Penjualan"
@@ -353,111 +337,59 @@ export default function LaporanPenjualan() {
             />
           </section>
 
-          {/* TABLE */}
-          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          {/* TABLE DATA YANG DIFILTER */}
+          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm print:border-none print:shadow-none">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 print:hidden">
               <div>
                 <h2 className="font-semibold text-slate-800">
                   Riwayat Penjualan
                 </h2>
                 <p className="text-sm text-slate-500">
-                  {filteredTransactions.length} transaksi ditemukan
+                  {filteredTransactions.length} transaksi ditemukan sesuai filter
                 </p>
               </div>
             </div>
 
             {loading ? (
               <div className="p-10 text-center text-sm text-slate-500">
-                <RefreshCw
-                  size={24}
-                  className="mx-auto mb-3 animate-spin text-blue-500"
-                />
+                <RefreshCw size={24} className="mx-auto mb-3 animate-spin text-blue-500" />
                 Memuat laporan...
-              </div>
-            ) : error ? (
-              <div className="p-10 text-center">
-                <p className="mb-3 text-sm text-red-500">{error}</p>
-                <button
-                  onClick={loadTransactions}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                >
-                  Coba Lagi
-                </button>
               </div>
             ) : filteredTransactions.length === 0 ? (
               <div className="p-10 text-center">
-                <ReceiptText
-                  size={40}
-                  className="mx-auto mb-3 text-slate-300"
-                />
-                <p className="font-medium text-slate-600">
-                  Belum ada transaksi
-                </p>
-                <p className="mt-1 text-sm text-slate-400">
-                  Belum ditemukan transaksi yang sesuai dengan filter.
-                </p>
+                <p className="font-medium text-slate-600">Belum ada transaksi</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px]">
-                  <thead className="bg-slate-50">
+                <table className="w-full min-w-900px print:min-w-full">
+                  <thead className="bg-slate-50 print:bg-slate-100">
                     <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
                       <th className="px-5 py-3">No</th>
                       <th className="px-5 py-3">Invoice</th>
                       <th className="px-5 py-3">Tanggal</th>
                       <th className="px-5 py-3">Kasir</th>
                       <th className="px-5 py-3">Item</th>
-                      <th className="px-5 py-3">Pembayaran</th>
                       <th className="px-5 py-3 text-right">Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredTransactions.map((trx, index) => {
-                      const items =
-                        trx.TransactionItems ||
-                        trx.transactionItems ||
-                        trx.TransactionItem ||
-                        [];
-
+                      const items = trx.details || [];
                       const totalItems = Array.isArray(items)
-                        ? items.reduce(
-                            (sum, item) => sum + Number(item.qty || 0),
-                            0,
-                          )
+                        ? items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
                         : 0;
 
                       return (
-                        <tr
-                          key={trx.id ?? trx.invoice ?? index}
-                          className="border-b border-slate-100 hover:bg-slate-50"
-                        >
-                          <td className="px-5 py-4 text-sm text-slate-500">
-                            {index + 1}
+                        <tr key={trx.id ?? index} className="border-b border-slate-100">
+                          <td className="px-5 py-4 text-sm text-slate-500">{index + 1}</td>
+                          <td className="px-5 py-4 font-semibold text-blue-600 print:text-black">
+                            {trx.invoice_no || "-"}
                           </td>
-                          <td className="px-5 py-4">
-                            <span className="font-semibold text-blue-600">
-                              {trx.invoice || "-"}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-sm text-slate-600">
-                            {formatDate(trx.createdAt)}
-                          </td>
-                          <td className="px-5 py-4 text-sm text-slate-700">
-                            {trx.User?.name ||
-                              trx.user?.name ||
-                              trx.cashier?.name ||
-                              "-"}
-                          </td>
-                          <td className="px-5 py-4 text-sm text-slate-600">
-                            {totalItems} item
-                          </td>
-                          <td className="px-5 py-4">
-                            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium capitalize text-blue-700">
-                              {trx.payment_method || "-"}
-                            </span>
-                          </td>
+                          <td className="px-5 py-4 text-sm text-slate-600">{formatDate(trx.createdAt)}</td>
+                          <td className="px-5 py-4 text-sm text-slate-700">{trx.User?.name || "Kasir"}</td>
+                          <td className="px-5 py-4 text-sm text-slate-600">{totalItems} item</td>
                           <td className="px-5 py-4 text-right font-semibold text-slate-800">
-                            {formatRupiah(trx.total)}
+                            {formatRupiah(trx.total_price)}
                           </td>
                         </tr>
                       );
@@ -475,8 +407,8 @@ export default function LaporanPenjualan() {
 
 function SummaryCard({ title, value, icon }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:border print:shadow-none">
+      <div className="mb-4 flex items-center justify-between print:hidden">
         <div className="rounded-lg bg-blue-50 p-2.5 text-blue-600">{icon}</div>
       </div>
       <p className="text-sm text-slate-500">{title}</p>

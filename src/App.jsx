@@ -6,7 +6,7 @@ import User from "./pages/User";
 import Product from "./pages/Product";
 import Category from "./pages/Category";
 import HomePage from "./pages/homePage";
-import LaporanPenjualan from "./pages/LaporanPenjualan";
+import LaporanPenjualan from "./pages/Report";
 
 function App() {
   return (
