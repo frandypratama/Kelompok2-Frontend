@@ -3,7 +3,6 @@ import {
   LayoutDashboard, 
   ShoppingCart, 
   Package, 
-  Boxes, 
   Receipt, 
   BarChart3, 
   LogOut,
@@ -17,9 +16,8 @@ const menus = [
   ["/user", "Kelola User", Users],
   ["/category", "Kategori", Layers],
   ["/product", "Produk", Package],
-  ["/kasir", "Kasir", ShoppingCart],
-  ["/stok", "Stok", Boxes],
-  ["/transaksi", "Transaksi", Receipt],
+  ["/pos", "Kasir", ShoppingCart],
+  ["/transactions", "Transaksi", Receipt],
   ["/laporan", "Laporan", BarChart3],
 ];
 
