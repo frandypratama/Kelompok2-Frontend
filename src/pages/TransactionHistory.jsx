@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import TransactionDetailModal from "../components/TransactionDetailModal";
+import axios from "axios";
 import { 
   Search, 
   Eye, 
@@ -12,61 +13,36 @@ import {
   ArrowDown 
 } from "lucide-react";
 
-// Dummy Data Simulasi Transaksi & Detail
-const DUMMY_TRANSACTIONS = [
-  {
-    id: 1,
-    invoice_no: "TRX-823901",
-    total_price: 112000,
-    payment: "cash",
-    cash_paid: 120000,
-    change_amount: 8000,
-    user_name: "Taqi",
-    created_at: "08/10/2026, 14:30",
-    details: [
-      { product_name: "Axis Data 5 Hari 8 GB", selling_price: 18000, quantity: 1 },
-      { product_name: "Telkomsel Paket Data 28 Hari 25 GB", selling_price: 80000, quantity: 1 },
-      { product_name: "Tri Data 3 Hari 6 GB", selling_price: 14000, quantity: 1 },
-    ],
-  },
-  {
-    id: 2,
-    invoice_no: "TRX-823902",
-    total_price: 52000,
-    payment: "qris",
-    cash_paid: 52000,
-    change_amount: 0,
-    user_name: "Taqi",
-    created_at: "08/10/2026, 15:10",
-    details: [
-      { product_name: "Telkomsel Paket Data 14 Hari 15 GB", selling_price: 52000, quantity: 1 },
-    ],
-  },
-  {
-    id: 3,
-    invoice_no: "TRX-823903",
-    total_price: 30000,
-    payment: "transfer",
-    cash_paid: 30000,
-    change_amount: 0,
-    user_name: "Budi",
-    created_at: "08/10/2026, 16:05",
-    details: [
-      { product_name: "Telkomsel Paket Data 7 Hari 10 GB", selling_price: 30000, quantity: 1 },
-    ],
-  },
-];
-
 export default function TransactionHistory() {
-  const [transactions] = useState(DUMMY_TRANSACTIONS);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // State untuk Sorting
-  const [sortField, setSortField] = useState("created_at"); // default sort by created_at
+  const [sortField, setSortField] = useState("createdAt"); 
   const [sortOrder, setSortOrder] = useState("desc"); // 'asc' | 'desc'
+
+  // Ambil data transaksi dari API backend
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get("http://localhost:3000/api/transactions"); // Sesuaikan URL backend kamu jika berbeda
+      if (response.data.success) {
+        setTransactions(response.data.data);
+      }
+    } catch (error) {
+      console.error("Gagal mengambil riwayat transaksi:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
 
   // Fungsi Toggle Sorting saat Header Klik
   const handleSort = (field) => {
@@ -94,7 +70,7 @@ export default function TransactionHistory() {
   const processedTransactions = useMemo(() => {
     let result = transactions.filter((trx) => {
       const matchSearch = trx.invoice_no.toLowerCase().includes(search.toLowerCase());
-      const matchPayment = paymentFilter === "" || trx.payment === paymentFilter;
+      const matchPayment = paymentFilter === "" || trx.payment_method === paymentFilter;
       return matchSearch && matchPayment;
     });
 
@@ -103,14 +79,12 @@ export default function TransactionHistory() {
         let valA = a[sortField];
         let valB = b[sortField];
 
-        // Format angka jika membandingkan harga
         if (typeof valA === "number") {
           return sortOrder === "asc" ? valA - valB : valB - valA;
         }
 
-        // Format teks/string
-        valA = String(valA).toLowerCase();
-        valB = String(valB).toLowerCase();
+        valA = String(valA || "").toLowerCase();
+        valB = String(valB || "").toLowerCase();
 
         if (valA < valB) return sortOrder === "asc" ? -1 : 1;
         if (valA > valB) return sortOrder === "asc" ? 1 : -1;
@@ -162,103 +136,95 @@ export default function TransactionHistory() {
           </div>
 
           {/* TABEL RIWAYAT TRANSAKSI */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-sm">
+              <table className="w-full text-left border-collapse text-sm">
                 <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 select-none">
-                    <tr>
-                    {/* 1. Tambah Header Kolom Nomor */}
+                  <tr>
                     <th className="p-4 text-center w-16">No</th>
-
-                    <th
-                        onClick={() => handleSort("invoice_no")}
-                        className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
-                    >
-                        <div className="flex items-center gap-2">
+                    <th onClick={() => handleSort("invoice_no")} className="p-4 cursor-pointer hover:bg-slate-100 transition-colors">
+                      <div className="flex items-center gap-2">
                         <span>No. Faktur</span>
                         {renderSortIcon("invoice_no")}
-                        </div>
+                      </div>
                     </th>
-
-                    <th
-                        onClick={() => handleSort("created_at")}
-                        className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
-                    >
-                        <div className="flex items-center gap-2">
+                    <th onClick={() => handleSort("createdAt")} className="p-4 cursor-pointer hover:bg-slate-100 transition-colors">
+                      <div className="flex items-center gap-2">
                         <span>Waktu</span>
-                        {renderSortIcon("created_at")}
-                        </div>
+                        {renderSortIcon("createdAt")}
+                      </div>
                     </th>
-
                     <th className="p-4">Kasir</th>
                     <th className="p-4">Metode</th>
                     <th className="p-4 text-right">Total Transaksi</th>
                     <th className="p-4 text-center">Aksi</th>
-                    </tr>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                    {processedTransactions.length > 0 ? (
-                    // 2. Tambahkan parameter 'index' di map
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="text-center py-10 text-slate-400 font-medium">
+                        Memuat data transaksi...
+                      </td>
+                    </tr>
+                  ) : processedTransactions.length > 0 ? (
                     processedTransactions.map((trx, index) => (
-                        <tr key={trx.id} className="hover:bg-slate-50 transition-colors">
-                        {/* 3. Tampilkan Nomor Urut (index + 1) */}
+                      <tr key={trx.id} className="hover:bg-slate-50 transition-colors">
                         <td className="p-4 text-center font-medium text-slate-500">
-                            {index + 1}
+                          {index + 1}
                         </td>
-
                         <td className="p-4 font-semibold text-slate-900">
-                            <div className="inline-flex items-center gap-2">
+                          <div className="inline-flex items-center gap-2">
                             <Receipt size={17} className="text-blue-600 shrink-0" />
                             <span>{trx.invoice_no}</span>
-                            </div>
+                          </div>
                         </td>
                         <td className="p-4 text-slate-600">
-                            <div className="inline-flex items-center gap-2">
+                          <div className="inline-flex items-center gap-2">
                             <Calendar size={15} className="text-slate-400" />
-                            <span>{trx.created_at}</span>
-                            </div>
+                            <span>{new Date(trx.createdAt).toLocaleString("id-ID")}</span>
+                          </div>
                         </td>
-                        <td className="p-4 font-medium text-slate-800">{trx.user_name}</td>
+                        <td className="p-4 font-medium text-slate-800">{trx.user?.name || "Kasir"}</td>
                         <td className="p-4">
-                            <span
+                          <span
                             className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                                trx.payment === "cash"
+                              trx.payment_method === "cash"
                                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : trx.payment === "transfer"
+                                : trx.payment_method === "transfer"
                                 ? "bg-purple-50 text-purple-700 border border-purple-200"
                                 : "bg-amber-50 text-amber-700 border border-amber-200"
                             }`}
-                            >
-                            {trx.payment}
-                            </span>
+                          >
+                            {trx.payment_method}
+                          </span>
                         </td>
                         <td className="p-4 text-right font-bold text-slate-900 text-base">
-                            Rp {trx.total_price.toLocaleString("id-ID")}
+                          Rp {trx.total_price.toLocaleString("id-ID")}
                         </td>
                         <td className="p-4 text-center">
-                            <button
+                          <button
                             type="button"
                             onClick={() => handleOpenDetail(trx)}
                             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg font-semibold text-xs transition-colors cursor-pointer"
-                            >
+                          >
                             <Eye size={15} />
                             <span>Detail</span>
-                            </button>
+                          </button>
                         </td>
-                        </tr>
+                      </tr>
                     ))
-                    ) : (
+                  ) : (
                     <tr>
-                        {/* Ubah colSpan jadi 7 karena ada tambahan 1 kolom */}
-                        <td colSpan={7} className="text-center py-10 text-slate-400 font-medium">
+                      <td colSpan={7} className="text-center py-10 text-slate-400 font-medium">
                         Tidak ada riwayat transaksi ditemukan.
-                        </td>
+                      </td>
                     </tr>
-                    )}
+                  )}
                 </tbody>
-                </table>
+              </table>
             </div>
-        </div>
+          </div>
         </div>
       </main>
 

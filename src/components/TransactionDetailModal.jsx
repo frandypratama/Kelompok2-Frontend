@@ -4,6 +4,9 @@ import { Printer, ShoppingBag, CreditCard, Calendar, User } from "lucide-react";
 export default function TransactionDetailModal({ isOpen, onClose, transaction }) {
   if (!transaction) return null;
 
+  // Hitung kembalian secara aman jika pembayaran cash
+  const changeAmount = transaction.paid_amount ? transaction.paid_amount - transaction.total_price : 0;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Detail Nota: ${transaction.invoice_no}`}>
       <div className="space-y-4 text-slate-700 text-xs">
@@ -14,14 +17,16 @@ export default function TransactionDetailModal({ isOpen, onClose, transaction })
               <Calendar size={13} />
               <span>Tanggal:</span>
             </div>
-            <p className="font-semibold text-slate-800">{transaction.created_at}</p>
+            <p className="font-semibold text-slate-800">
+              {transaction.createdAt ? new Date(transaction.createdAt).toLocaleString("id-ID") : "-"}
+            </p>
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-1 text-slate-500">
               <User size={13} />
               <span>Kasir:</span>
             </div>
-            <p className="font-semibold text-slate-800">{transaction.user_name || "Kasir"}</p>
+            <p className="font-semibold text-slate-800">{transaction.user?.name || "Kasir"}</p>
           </div>
           <div className="space-y-1 col-span-2 pt-1 border-t border-slate-200/60 flex items-center justify-between">
             <div className="flex items-center gap-1 text-slate-500">
@@ -29,7 +34,7 @@ export default function TransactionDetailModal({ isOpen, onClose, transaction })
               <span>Pembayaran:</span>
             </div>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-700">
-              {transaction.payment}
+              {transaction.payment_method || "-"}
             </span>
           </div>
         </div>
@@ -53,11 +58,14 @@ export default function TransactionDetailModal({ isOpen, onClose, transaction })
               <tbody className="divide-y divide-slate-100">
                 {transaction.details?.map((item, idx) => (
                   <tr key={idx} className="hover:bg-slate-50">
-                    <td className="p-2 font-medium text-slate-800">{item.product_name}</td>
+                    {/* Mengambil nama produk dari hasil include Sequelize (item.product.product_name) */}
+                    <td className="p-2 font-medium text-slate-800">
+                      {item.product?.product_name || `Produk ID: ${item.product_id}`}
+                    </td>
                     <td className="p-2 text-center">Rp {item.selling_price.toLocaleString("id-ID")}</td>
                     <td className="p-2 text-center font-bold">{item.quantity}</td>
                     <td className="p-2 text-right font-medium">
-                      Rp {(item.selling_price * item.quantity).toLocaleString("id-ID")}
+                      Rp {item.subtotal.toLocaleString("id-ID")}
                     </td>
                   </tr>
                 ))}
@@ -72,15 +80,15 @@ export default function TransactionDetailModal({ isOpen, onClose, transaction })
             <span>Total Belanja:</span>
             <span>Rp {transaction.total_price.toLocaleString("id-ID")}</span>
           </div>
-          {transaction.payment === "cash" && (
+          {transaction.payment_method === "cash" && (
             <>
               <div className="flex justify-between text-slate-500 text-[11px]">
                 <span>Tunai Dibayar:</span>
-                <span>Rp {transaction.cash_paid?.toLocaleString("id-ID")}</span>
+                <span>Rp {transaction.paid_amount?.toLocaleString("id-ID")}</span>
               </div>
               <div className="flex justify-between text-slate-500 text-[11px]">
                 <span>Kembalian:</span>
-                <span>Rp {transaction.change_amount?.toLocaleString("id-ID")}</span>
+                <span>Rp {changeAmount > 0 ? changeAmount.toLocaleString("id-ID") : 0}</span>
               </div>
             </>
           )}
