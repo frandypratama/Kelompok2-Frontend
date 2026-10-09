@@ -19,7 +19,7 @@ const menuAdmin = [
   ["/product", "Produk", Package],
   ["/pos", "Kasir", ShoppingCart],
   ["/transactions", "Transaksi", Receipt],
-  ["/pengeluaran", "Pengeluaran", Wallet],
+  //["/pengeluaran", "Pengeluaran", Wallet],
   ["/laporan", "Laporan", BarChart3],
 ];
 

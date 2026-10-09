@@ -4,9 +4,10 @@ import Navbar from "../components/Navbar";
 import PosProductCard from "../components/PosProductCard";
 import PosCartItem from "../components/PosCartItem";
 import InvoiceModal from "../components/InvoiceModal";
-import { Search, ShoppingCart, CreditCard, Banknote, QrCode, ArrowLeftRight } from "lucide-react";
+import { Search, ShoppingCart, CreditCard, Banknote, QrCode, ArrowLeftRight, Loader2 } from "lucide-react";
 import { getProducts } from "../services/productService";
 import { getCategory } from "../services/categoryService";
+import { createTransaction } from "../services/transactionService";
 
 export default function Pos() {
   const [products, setProducts] = useState([]);
@@ -22,82 +23,75 @@ export default function Pos() {
   const [cart, setCart] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("cash"); // 'cash' | 'transfer' | 'qris'
   const [bayar, setBayar] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   // Modal State
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [lastTransaction, setLastTransaction] = useState(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const fetchInitialData = async () => {
+    try {
+      const [prodRes, catRes] = await Promise.all([getProducts(), getCategory()]);
 
-    const fetchInitialData = async () => {
-      try {
-        const [prodRes, catRes] = await Promise.all([getProducts(), getCategory()]);
+      // 1. Processing Products Data
+      const productList = Array.isArray(prodRes)
+        ? prodRes
+        : Array.isArray(prodRes.data)
+        ? prodRes.data
+        : prodRes.data?.data || [];
 
-        if (!isMounted) return;
+      const mappedProducts = productList.map((p) => ({
+        id: p.id,
+        nama_produk: p.product_name || p.nama_produk,
+        harga_jual: Number(p.selling_price !== undefined ? p.selling_price : p.harga_jual),
+        stok: Number(p.stock !== undefined ? p.stock : p.stok),
+        kategori_id: p.category_id !== undefined ? p.category_id : p.kategori_id,
+      }));
+      setProducts(mappedProducts);
 
-        // 1. Processing Products Data
-        const productList = Array.isArray(prodRes)
-          ? prodRes
-          : Array.isArray(prodRes.data)
-          ? prodRes.data
-          : prodRes.data?.data || [];
+      // 2. Processing Nested Categories Data (Flatten Tree)
+      const rawCategoryData = Array.isArray(catRes)
+        ? catRes
+        : Array.isArray(catRes.data)
+        ? catRes.data
+        : catRes.data?.data || [];
 
-        const mappedProducts = productList.map((p) => ({
-          id: p.id,
-          nama_produk: p.product_name || p.nama_produk,
-          harga_jual: Number(p.selling_price !== undefined ? p.selling_price : p.harga_jual),
-          stok: Number(p.stock !== undefined ? p.stock : p.stok),
-          kategori_id: p.category_id !== undefined ? p.category_id : p.kategori_id,
-        }));
-        setProducts(mappedProducts);
+      const flattenedCategories = [];
 
-        // 2. Processing Nested Categories Data (Flatten Tree)
-        const rawCategoryData = Array.isArray(catRes)
-          ? catRes
-          : Array.isArray(catRes.data)
-          ? catRes.data
-          : catRes.data?.data || [];
+      // Helper rekursif untuk membongkar subcategories bersarang dari API
+      const extractCategories = (items, defaultParentId = null) => {
+        if (!Array.isArray(items)) return;
 
-        const flattenedCategories = [];
+        items.forEach((item) => {
+          const currentParentId =
+            item.parent_id !== undefined && item.parent_id !== null
+              ? item.parent_id && Number(item.parent_id) !== 0
+                ? Number(item.parent_id)
+                : null
+              : defaultParentId;
 
-        // Helper rekursif untuk membongkar subcategories bersarang dari API
-        const extractCategories = (items, defaultParentId = null) => {
-          if (!Array.isArray(items)) return;
-
-          items.forEach((item) => {
-            const currentParentId =
-              item.parent_id !== undefined && item.parent_id !== null
-                ? item.parent_id && Number(item.parent_id) !== 0
-                  ? Number(item.parent_id)
-                  : null
-                : defaultParentId;
-
-            flattenedCategories.push({
-              id: Number(item.id),
-              nama_kategori: item.category_name || item.nama_kategori || item.name || "Tanpa Nama",
-              parent_id: currentParentId,
-            });
-
-            // Jika item punya anak subcategories, ekstraksi juga secara rekursif
-            if (item.subcategories && Array.isArray(item.subcategories) && item.subcategories.length > 0) {
-              extractCategories(item.subcategories, Number(item.id));
-            }
+          flattenedCategories.push({
+            id: Number(item.id),
+            nama_kategori: item.category_name || item.nama_kategori || item.name || "Tanpa Nama",
+            parent_id: currentParentId,
           });
-        };
 
-        extractCategories(rawCategoryData);
-        setCategories(flattenedCategories);
-      } catch (err) {
-        console.error("Gagal memuat data POS:", err);
-      }
-    };
+          // Jika item punya anak subcategories, ekstraksi juga secara rekursif
+          if (item.subcategories && Array.isArray(item.subcategories) && item.subcategories.length > 0) {
+            extractCategories(item.subcategories, Number(item.id));
+          }
+        });
+      };
 
+      extractCategories(rawCategoryData);
+      setCategories(flattenedCategories);
+    } catch (err) {
+      console.error("Gagal memuat data POS:", err);
+    }
+  };
+
+  useEffect(() => {
     fetchInitialData();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   // Helper Filter Rekursif Anak Kategori (Mengembalikan ID sendiri & seluruh ID anak/cucu)
@@ -188,35 +182,53 @@ export default function Pos() {
     cart.length > 0 &&
     (paymentMethod !== "cash" || (paymentMethod === "cash" && nominalBayar >= totalHarga));
 
-  const handleCheckout = () => {
-    if (!isPaymentValid) return;
+  const handleCheckout = async () => {
+    if (!isPaymentValid || submitting) return;
+
+    setSubmitting(true);
 
     const transactionPayload = {
-      invoice_no: `TRX-${Date.now().toString().slice(-6)}`,
-      total_price: totalHarga,
-      payment: paymentMethod, // 'cash' | 'transfer' | 'qris'
-      bayar: nominalBayar,
-      kembali: kembali,
-      items: [...cart],
-      tanggal: new Date().toLocaleString("id-ID"),
+      payment_method: paymentMethod, // 'cash' | 'transfer' | 'qris'
+      paid_amount: nominalBayar,     // Nominal angka uang tunai yang dibayar
+      items: cart.map((item) => ({
+        product_id: item.id,
+        quantity: item.qty,
+        selling_price: item.harga_jual,
+        subtotal: item.harga_jual * item.qty,
+      })),
     };
 
-    setLastTransaction(transactionPayload);
+    try {
+      const response = await createTransaction(transactionPayload);
+      const createdData = response.data || response;
 
-    // Simulasi pemotongan stok lokal
-    setProducts((prevProducts) =>
-      prevProducts.map((p) => {
-        const cartItem = cart.find((c) => c.id === p.id);
-        if (cartItem) {
-          return { ...p, stok: p.stok - cartItem.qty };
-        }
-        return p;
-      })
-    );
+      const invoiceData = {
+        invoice_no: createdData.invoice_no || `TRX-${Date.now().toString().slice(-6)}`,
+        total_price: totalHarga,
+        payment: paymentMethod,
+        bayar: nominalBayar,
+        kembali: kembali,
+        items: [...cart],
+        tanggal: createdData.created_at
+          ? new Date(createdData.created_at).toLocaleString("id-ID")
+          : new Date().toLocaleString("id-ID"),
+      };
 
-    setIsReceiptOpen(true);
-    setCart([]);
-    setBayar("");
+      setLastTransaction(invoiceData);
+      setIsReceiptOpen(true);
+      setCart([]);
+      setBayar("");
+
+      // Refresh data produk otomatis untuk memperbarui stok dari database
+      await fetchInitialData();
+    } catch (err) {
+      console.error("Gagal melakukan transaksi:", err);
+      alert(
+        err.response?.data?.message || "Terjadi kesalahan saat memproses transaksi."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -467,15 +479,24 @@ export default function Pos() {
               <button
                 type="button"
                 onClick={handleCheckout}
-                disabled={!isPaymentValid}
+                disabled={!isPaymentValid || submitting}
                 className={`w-full py-2.5 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 text-white transition-all cursor-pointer ${
-                  !isPaymentValid
+                  !isPaymentValid || submitting
                     ? "bg-slate-300 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700 shadow-md"
                 }`}
               >
-                <CreditCard size={18} />
-                <span>Bayar & Cetak Struk</span>
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Memproses Transaksi...</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard size={18} />
+                    <span>Bayar & Cetak Struk</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

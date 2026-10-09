@@ -7,12 +7,11 @@ import User from "./pages/User";
 import Product from "./pages/Product";
 import Category from "./pages/Category";
 import HomePage from "./pages/homePage";
+import LaporanPenjualan from "./pages/Report";
 import Pos from "./pages/Pos";
 import TransactionHistory from "./pages/TransactionHistory";
-import LaporanPenjualan from "./pages/LaporanPenjualan";
-import Pengeluaran from "./pages/Pengeluaran";
-
 import ProtectedRoute from "./components/ProtectedRoute";
+
 
 function App() {
   return (
@@ -67,23 +66,6 @@ function App() {
         }
       />
 
-      <Route
-        path="/laporan-penjualan"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <LaporanPenjualan />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/pengeluaran"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <Pengeluaran />
-          </ProtectedRoute>
-        }
-      />
 
       {/* Kasir dan Admin boleh mengakses Kasir */}
       <Route
