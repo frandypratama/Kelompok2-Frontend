@@ -9,7 +9,6 @@ import {
   Store,
   Users,
   Layers,
-  Wallet,
 } from "lucide-react";
 
 const menuAdmin = [
@@ -19,7 +18,6 @@ const menuAdmin = [
   ["/product", "Produk", Package],
   ["/pos", "Kasir", ShoppingCart],
   ["/transactions", "Transaksi", Receipt],
-  //["/pengeluaran", "Pengeluaran", Wallet],
   ["/laporan", "Laporan", BarChart3],
 ];
 
@@ -58,7 +56,7 @@ const menus = isAdmin
   };
 
   return (
-    <aside className="flex min-h-screen w-64 shrink-0 flex-col justify-between border-r border-blue-500/50 bg-blue-600 p-4 text-white shadow-lg">
+    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col justify-between border-r border-blue-500/50 bg-blue-600 p-4 text-white shadow-lg">
       <div>
         <div className="mb-6 flex items-center space-x-3 border-b border-blue-500/60 px-3 py-4">
           <div className="rounded-lg bg-white/20 p-2">
