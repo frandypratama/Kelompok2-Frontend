@@ -187,7 +187,11 @@ export default function Pos() {
 
     setSubmitting(true);
 
+    const storedUser = JSON.parse(localStorage.getItem("user")) || {};
+    const currentUserId = storedUser.id || null;
+
     const transactionPayload = {
+      user_id: currentUserId,
       payment_method: paymentMethod, // 'cash' | 'transfer' | 'qris'
       paid_amount: nominalBayar,     // Nominal angka uang tunai yang dibayar
       items: cart.map((item) => ({
@@ -235,7 +239,7 @@ export default function Pos() {
     <div className="flex min-h-screen bg-gray-50 text-gray-800 antialiased">
       <Sidebar />
 
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
         <Navbar title="Point of Sale (Kasir)" />
 
         <div className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -332,7 +336,7 @@ export default function Pos() {
           </div>
 
           {/* KERANJANG & PEMBAYARAN (5 Kolom) */}
-          <div className="lg:col-span-5 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4 h-fit">
+          <div className="sticky top-6 lg:col-span-5 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4 h-fit">
             <div>
               <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">

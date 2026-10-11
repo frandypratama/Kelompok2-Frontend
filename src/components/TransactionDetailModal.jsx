@@ -10,30 +10,37 @@ export default function TransactionDetailModal({ isOpen, onClose, transaction })
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Detail Nota: ${transaction.invoice_no}`}>
       <div className="space-y-4 text-slate-700 text-xs">
-        {/* Info Header */}
-        <div className="grid grid-cols-2 gap-2.5 bg-slate-50 p-3 rounded-lg border border-slate-200">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1 text-slate-500">
+        {/* Header Minimalis Row List */}
+        <div className="bg-white border border-slate-200 rounded-xl p-3 divide-y divide-slate-100 text-xs">
+          {/* Tanggal */}
+          <div className="flex items-center justify-between pb-2">
+            <div className="flex items-center gap-1.5 text-slate-500">
               <Calendar size={13} />
-              <span>Tanggal:</span>
+              <span>Tanggal</span>
             </div>
-            <p className="font-semibold text-slate-800">
+            <span className="font-semibold text-slate-700">
               {transaction.createdAt ? new Date(transaction.createdAt).toLocaleString("id-ID") : "-"}
-            </p>
+            </span>
           </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-1 text-slate-500">
+
+          {/* Kasir */}
+          <div className="flex items-center justify-between py-2">
+            <div className="flex items-center gap-1.5 text-slate-500">
               <User size={13} />
-              <span>Kasir:</span>
+              <span>Kasir</span>
             </div>
-            <p className="font-semibold text-slate-800">{transaction.user?.name || "Kasir"}</p>
+            <span className="font-semibold text-slate-700">
+              {transaction.user?.name || "-"}
+            </span>
           </div>
-          <div className="space-y-1 col-span-2 pt-1 border-t border-slate-200/60 flex items-center justify-between">
-            <div className="flex items-center gap-1 text-slate-500">
+
+          {/* Pembayaran */}
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center gap-1.5 text-slate-500">
               <CreditCard size={13} />
-              <span>Pembayaran:</span>
+              <span>Pembayaran</span>
             </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-700">
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-700 border border-slate-200">
               {transaction.payment_method || "-"}
             </span>
           </div>
