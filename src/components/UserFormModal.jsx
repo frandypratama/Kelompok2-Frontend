@@ -25,8 +25,8 @@ export default function UserFormModal({
         <InputField
           label="Nama Lengkap"
           placeholder="Masukkan nama lengkap"
-          value={formData.nama}
-          onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           required
         />
 
