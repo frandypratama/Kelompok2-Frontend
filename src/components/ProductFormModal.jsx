@@ -31,7 +31,7 @@ export default function ProductFormModal({
     if (!parentCat) return { l1: "", l2: "", l3: "" };
 
     if (parentCat.parent_id === null || parentCat.parent_id === undefined) {
-      return { l1: String(parentCat.id), l2: String(currentCat.id), l3: "" };
+      return { l1: String(parentCat.parent_id), l2: String(currentCat.id), l3: "" };
     }
 
     return {
@@ -128,6 +128,21 @@ export default function ProductFormModal({
             setFormData({ ...formData, stock: e.target.value })
           }
         />
+
+        {/* Input File Gambar Produk */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">
+            Gambar Produk (Opsional - Kosongkan jika ingin pakai gambar default kategori)
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) =>
+              setFormData({ ...formData, image: e.target.files[0] })
+            }
+            className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-lg"
+          />
+        </div>
 
         {/* Dropdown Kategori Cascading */}
         <div className="space-y-2">

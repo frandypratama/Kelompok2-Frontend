@@ -18,18 +18,27 @@ export const getProductById = async (id) => {
   return response.data.data;
 };
 
-// Tambah produk
+// Tambah produk (mendukung FormData / file)
 export const createProduct = async (productData) => {
-  const response = await api.post("/products", productData);
+  const response = await api.post("/products", productData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
   return response.data;
 };
 
-// Edit produk
+// Edit produk (mendukung FormData / file)
 export const updateProduct = async (id, productData) => {
   const response = await api.put(
     `/products/${id}`,
-    productData
+    productData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
   );
 
   return response.data;

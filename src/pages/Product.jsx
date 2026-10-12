@@ -4,18 +4,23 @@ import Navbar from "../components/Navbar";
 import Table from "../components/Table";
 import ProductFormModal from "../components/ProductFormModal";
 import ConfirmModal from "../components/ConfirmModal";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { getProducts, createProduct, updateProduct, deleteProduct } from "../services/productService";
 import { getCategory } from "../services/categoryService";
+import { getProductImage } from "../utils/imageHelper"; // Import helper gambar standar industri
 
 export default function Product() {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]); // State kategori murni dari database
+  const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
 
   const [filterL1, setFilterL1] = useState("");
   const [filterL2, setFilterL2] = useState("");
   const [filterL3, setFilterL3] = useState("");
+
+  // State untuk Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -24,6 +29,7 @@ export default function Product() {
     purchase_price: "",
     selling_price: "",
     stock: "",
+    image: null, // Tambahkan state image untuk file upload
     category_id: "",
   });
 
@@ -47,8 +53,12 @@ export default function Product() {
         purchase_price: p.purchase_price !== undefined ? p.purchase_price : p.harga_beli,
         selling_price: p.selling_price !== undefined ? p.selling_price : p.harga_jual,
         stock: p.stock !== undefined ? p.stock : p.stok,
+        image: p.image || null, // Ambil properti image dari database
         category_id: p.category_id !== undefined ? p.category_id : p.kategori_id,
       }));
+
+      // Urutkan dari yang terbaru (ID terbesar / produk terakhir ditambahkan berada di atas)
+      mapped.sort((a, b) => b.id - a.id);
 
       setProducts(mapped);
     } catch (error) {
@@ -56,7 +66,6 @@ export default function Product() {
     }
   };
 
-  // Helper untuk meratakan struktur kategori bertingkat dari backend
   const flattenCategories = (nestedData) => {
     let flatList = [];
     const recurse = (items, parentId = null) => {
@@ -89,7 +98,24 @@ export default function Product() {
 
   const getCategoryName = (catId) => {
     const found = categories.find((c) => String(c.id) === String(catId));
-    return found ? found.nama_kategori : "-";
+    if (!found) return "-";
+
+    let current = found;
+    let isVoucherFamily = false;
+
+    while (current) {
+      if (current.nama_kategori && current.nama_kategori.toLowerCase() === "voucher") {
+        isVoucherFamily = true;
+        break;
+      }
+      current = categories.find((c) => String(c.id) === String(current.parent_id));
+    }
+
+    if (isVoucherFamily) {
+      return "Voucher";
+    }
+
+    return found.nama_kategori;
   };
 
   const getAllChildCategoryIds = (parentId) => {
@@ -116,6 +142,7 @@ export default function Product() {
     return categories.filter((c) => Number(c.parent_id) === Number(filterL2));
   }, [filterL2, categories]);
 
+  // Filter produk berdasarkan pencarian dan kategori
   const filteredProducts = products.filter((p) => {
     const matchSearch = (p.product_name || "").toLowerCase().includes(search.toLowerCase());
 
@@ -130,6 +157,17 @@ export default function Product() {
     return matchSearch && matchCategory;
   });
 
+  // Reset halaman ke 1 setiap kali filter atau pencarian berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterL1, filterL2, filterL3]);
+
+  // Hitung data untuk halaman aktif (Pagination)
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+
   const handleOpenAddModal = () => {
     setSelectedProduct(null);
     setFormData({
@@ -137,6 +175,7 @@ export default function Product() {
       purchase_price: "",
       selling_price: "",
       stock: "",
+      image: null,
       category_id: "",
     });
     setIsModalOpen(true);
@@ -149,6 +188,7 @@ export default function Product() {
       purchase_price: product.purchase_price,
       selling_price: product.selling_price,
       stock: product.stock,
+      image: null, // Reset state image, diisi jika user memilih file baru
       category_id: product.category_id || "",
     });
     setIsModalOpen(true);
@@ -156,20 +196,23 @@ export default function Product() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     try {
-      const payload = {
-        product_name: formData.product_name,
-        purchase_price: Number(formData.purchase_price),
-        selling_price: Number(formData.selling_price),
-        stock: Number(formData.stock),
-        category_id: Number(formData.category_id),
-      };
+      // Gunakan FormData agar mendukung pengiriman file gambar via Multer
+      const data = new FormData();
+      data.append("product_name", formData.product_name);
+      data.append("purchase_price", formData.purchase_price);
+      data.append("selling_price", formData.selling_price);
+      data.append("stock", formData.stock);
+      data.append("category_id", formData.category_id);
+
+      if (formData.image instanceof File) {
+        data.append("image", formData.image);
+      }
 
       if (selectedProduct) {
-        await updateProduct(selectedProduct.id, payload);
+        await updateProduct(selectedProduct.id, data);
       } else {
-        await createProduct(payload);
+        await createProduct(data);
       }
       setIsModalOpen(false);
       fetchProducts();
@@ -188,12 +231,26 @@ export default function Product() {
     }
   };
 
+  // Kolom tabel dengan penambahan kolom Gambar dan penyesuaian nomor urut
   const columns = [
     {
       header: "No",
-      render: (_, index) => index + 1,
+      render: (_, index) => indexOfFirstItem + index + 1,
       className: "w-16 text-center",
       tdClassName: "text-center font-medium text-slate-500",
+    },
+    {
+      header: "Gambar",
+      render: (row) => (
+        <img 
+          src={getProductImage(row, categories)} 
+          alt={row.product_name} 
+          className="w-10 h-10 object-cover rounded-lg border border-slate-200 mx-auto"
+          onError={(e) => { e.target.src = "http://localhost:3000/uploads/default-product.png"; }}
+        />
+      ),
+      className: "w-20 text-center",
+      tdClassName: "text-center",
     },
     { header: "Nama Produk", key: "product_name" },
     {
@@ -313,11 +370,60 @@ export default function Product() {
             </div>
           </div>
 
-          <Table
-            columns={columns}
-            rows={filteredProducts}
-            empty="Tidak ada produk yang ditemukan."
-          />
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <Table
+              columns={columns}
+              rows={currentProducts}
+              empty="Tidak ada produk yang ditemukan."
+            />
+
+            {/* Bagian Kontrol Pagination */}
+            {filteredProducts.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-slate-200 gap-4">
+                <div className="text-sm text-slate-500">
+                  Menampilkan <span className="font-medium">{indexOfFirstItem + 1}</span> sampai{" "}
+                  <span className="font-medium">
+                    {Math.min(indexOfLastItem, filteredProducts.length)}
+                  </span>{" "}
+                  dari <span className="font-medium">{filteredProducts.length}</span> data produk
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+                          currentPage === page
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "text-slate-600 hover:bg-slate-100 border border-slate-200"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
