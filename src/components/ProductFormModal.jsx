@@ -90,7 +90,7 @@ export default function ProductFormModal({
     >
       <form onSubmit={onSubmit} className="space-y-4">
         <InputField
-          label="Nama Produkfdgfd"
+          label="Nama Produk"
           placeholder="Masukkan nama produk"
           value={formData.product_name}
           onChange={(e) =>
