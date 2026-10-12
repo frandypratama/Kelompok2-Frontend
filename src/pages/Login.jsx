@@ -66,7 +66,7 @@ export default function Login() {
 
       if (data.user.role === "admin") {
         navigate("/dashboard", { replace: true });
-      } else if (data.user.role === "user") {
+      } else if (data.user.role === "kasir") {
         navigate("/dashboard", { replace: true });
       } else {
         alert("Role user tidak dikenali");

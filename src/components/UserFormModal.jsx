@@ -64,21 +64,46 @@ export default function UserFormModal({
           )}
         </div>
 
-        {/* Dropdown Role */}
+        {/* Radio Card Role */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">
             Role
           </label>
-          <select
-            value={formData.role}
-            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-            required
-          >
-            <option value="owner">Owner</option>
-            <option value="admin">Admin</option>
-            <option value="user">User</option>
-          </select>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Opsi Admin */}
+            <label className={`flex items-center justify-center px-3 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-all ${
+              formData.role === "admin" 
+                ? "bg-green-50 border-green-600 text-green-700 shadow-xs" 
+                : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
+            }`}>
+              <input
+                type="radio"
+                name="role"
+                value="admin"
+                checked={formData.role === "admin"}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                className="sr-only" // Menyembunyikan radio bawaan browser
+              />
+              Admin
+            </label>
+
+            {/* Opsi Kasir */}
+            <label className={`flex items-center justify-center px-3 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-all ${
+              formData.role === "kasir" 
+                ? "bg-blue-50 border-blue-600 text-blue-700 shadow-xs" 
+                : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
+            }`}>
+              <input
+                type="radio"
+                name="role"
+                value="kasir"
+                checked={formData.role === "kasir"}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                className="sr-only"
+              />
+              Kasir
+            </label>
+          </div>
         </div>
 
         {/* Tombol Aksi */}

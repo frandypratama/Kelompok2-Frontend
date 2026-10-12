@@ -1,4 +1,3 @@
-
 import { Navigate } from "react-router-dom";
 
 export default function ProtectedRoute({
@@ -35,15 +34,16 @@ export default function ProtectedRoute({
     user.frontendRole || user.role || ""
   ).trim().toLowerCase();
 
+  // Seragamkan menjadi "admin" atau "kasir"
   const currentRole = ["admin", "owner"].includes(role)
     ? "admin"
     : ["karyawan", "kasir", "user"].includes(role)
-    ? "karyawan"
+    ? "kasir" // Diubah dari "karyawan" menjadi "kasir"
     : "";
 
   // Tolak akses jika role tidak sesuai
   if (!currentRole || !allowedRoles.includes(currentRole)) {
-    if (currentRole === "karyawan") {
+    if (currentRole === "kasir") {
       return <Navigate to="/pos" replace />;
     }
 
