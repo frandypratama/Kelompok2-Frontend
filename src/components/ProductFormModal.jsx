@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Modal from "./Modal";
 import InputField from "./ui/InputField";
-import { API_URL } from "../services/api"; // Sesuaikan jalur impor API_URL Anda
+import { API_URL } from "../services/api";
 
 export default function ProductFormModal({
   isOpen,
@@ -51,7 +51,6 @@ export default function ProductFormModal({
   useEffect(() => {
     if (isOpen) {
       setSelectedLevels(getInitialLevels());
-      // Jika mode edit dan produk memiliki gambar, tampilkan preview dari server
       if (formData.image) {
         setPreview(`${API_URL}/uploads/${formData.image}`);
       } else {
@@ -61,7 +60,7 @@ export default function ProductFormModal({
     }
   }, [isOpen, formData]);
 
-  // Handle pemilihan file gambar
+  // Handle pemilihan file gambar yang bersih dan terpusat
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -87,8 +86,9 @@ export default function ProductFormModal({
     data.append("stock", formData.stock);
     data.append("category_id", formData.category_id);
 
+    // Kirim file gambar dengan key "image" (sesuai upload.single("image") di backend)
     if (imageFile) {
-      data.append("image", imageFile); // Nama field harus "image" sesuai backend
+      data.append("image", imageFile);
     }
 
     onSubmit(data);
@@ -172,21 +172,6 @@ export default function ProductFormModal({
           }
         />
 
-        {/* Input File Gambar Produk */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">
-            Gambar Produk (Opsional - Kosongkan jika ingin pakai gambar default kategori)
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) =>
-              setFormData({ ...formData, image: e.target.files[0] })
-            }
-            className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-lg"
-          />
-        </div>
-
         {/* Dropdown Kategori Cascading */}
         <div className="space-y-2">
           <label className="block text-xs font-semibold text-slate-600">
@@ -236,7 +221,7 @@ export default function ProductFormModal({
           )}
         </div>
 
-        {/* Input Upload Gambar */}
+        {/* Input Upload Gambar (Hanya satu yang aktif dan benar) */}
         <div className="space-y-1">
           <label className="block text-xs font-semibold text-slate-600">
             Foto Produk (JPG/PNG/WEBP, maks. 2MB)
@@ -245,7 +230,7 @@ export default function ProductFormModal({
             type="file"
             accept=".jpg, .jpeg, .png, .webp"
             onChange={handleFileChange}
-            className="file-input file-input-bordered w-full text-sm"
+            className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-lg"
           />
         </div>
 
