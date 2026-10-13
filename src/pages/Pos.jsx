@@ -31,7 +31,8 @@ export default function Pos() {
 
   const fetchInitialData = async () => {
     try {
-      const [prodRes, catRes] = await Promise.all([getProducts(), getCategory()]);
+      // Mengirim limit: 50 agar semua produk dari database termuat di halaman kasir
+      const [prodRes, catRes] = await Promise.all([getProducts({ limit: 50 }), getCategory()]);
 
       // 1. Processing Products Data
       const productList = Array.isArray(prodRes)
@@ -46,6 +47,7 @@ export default function Pos() {
         harga_jual: Number(p.selling_price !== undefined ? p.selling_price : p.harga_jual),
         stok: Number(p.stock !== undefined ? p.stock : p.stok),
         kategori_id: p.category_id !== undefined ? p.category_id : p.kategori_id,
+        image: p.image || p.foto || null, // Menangkap nama file foto dari database
       }));
       setProducts(mappedProducts);
 
@@ -58,7 +60,6 @@ export default function Pos() {
 
       const flattenedCategories = [];
 
-      // Helper rekursif untuk membongkar subcategories bersarang dari API
       const extractCategories = (items, defaultParentId = null) => {
         if (!Array.isArray(items)) return;
 
@@ -76,7 +77,6 @@ export default function Pos() {
             parent_id: currentParentId,
           });
 
-          // Jika item punya anak subcategories, ekstraksi juga secara rekursif
           if (item.subcategories && Array.isArray(item.subcategories) && item.subcategories.length > 0) {
             extractCategories(item.subcategories, Number(item.id));
           }
@@ -90,6 +90,7 @@ export default function Pos() {
     }
   };
 
+  // Memanggil fetchInitialData saat komponen pertama kali dirender
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -193,7 +194,7 @@ export default function Pos() {
     const transactionPayload = {
       user_id: currentUserId,
       payment_method: paymentMethod, // 'cash' | 'transfer' | 'qris'
-      paid_amount: nominalBayar,     // Nominal angka uang tunai yang dibayar
+      paid_amount: nominalBayar,
       items: cart.map((item) => ({
         product_id: item.id,
         quantity: item.qty,

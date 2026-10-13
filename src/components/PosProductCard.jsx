@@ -1,3 +1,5 @@
+import { API_URL } from "../services/api";
+
 export default function PosProductCard({ product, onAddToCart, availableStock, currentQty }) {
   const isOutOfStock = availableStock <= 0;
 
@@ -13,6 +15,19 @@ export default function PosProductCard({ product, onAddToCart, availableStock, c
       }`}
     >
       <div>
+        {/* Render Gambar Produk */}
+        <div className="h-24 w-full bg-slate-100 rounded-lg overflow-hidden mb-2 border border-slate-100 flex items-center justify-center">
+          {product.image ? (
+            <img
+              src={`${API_URL}/uploads/${product.image}`}
+              alt={product.nama_produk}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span className="text-[10px] text-slate-400 font-medium">N/A</span>
+          )}
+        </div>
+
         <p className="font-semibold text-slate-800 text-sm line-clamp-2">
           {product.nama_produk}
         </p>
