@@ -10,6 +10,7 @@ import LaporanPenjualan from "./pages/Report";
 import Pos from "./pages/Pos";
 import TransactionHistory from "./pages/TransactionHistory";
 import ProtectedRoute from "./components/ProtectedRoute";
+import LaporanUangKeluar from "./pages/LaporanUangKeluar";
 
 // Komponen pembatas: Jika sudah login, dilarang masuk ke halaman login/landing
 function PublicOnlyRoute({ children }) {
@@ -119,12 +120,20 @@ function App() {
           </ProtectedRoute>
         }
       />
-
-      {/* URL tidak dikenal / Redirect ke login */}
+      <Route
+        path="/laporan-uang-keluar"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <LaporanUangKeluar />
+          </ProtectedRoute>
+        }
+        />
+      {/* URL tidak dikenal */}
       <Route
         path="*"
         element={<Navigate to="/login" replace />}
       />
+
     </Routes>
   );
 }
