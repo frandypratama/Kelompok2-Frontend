@@ -5,7 +5,7 @@ import Table from "../components/Table";
 import Pagination from "../components/Pagination"; // 1. Impor komponen Pagination
 import ProductFormModal from "../components/ProductFormModal";
 import ConfirmModal from "../components/ConfirmModal";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { getProducts, createProduct, updateProduct, deleteProduct } from "../services/productService";
 import { getCategory } from "../services/categoryService";
 import { API_URL } from "../services/api";
@@ -22,7 +22,7 @@ export default function Product() {
 
 // State untuk Pagination dan Sorting (Default: Terbaru berdasarkan id DESC)
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit, setLimit] = useState(10);
   const [sort, setSort] = useState("id"); // Ubah dari "createdAt" menjadi "id"
   const [order, setOrder] = useState("DESC"); // "DESC" berarti dari yang terbesar (terbaru) ke terkecil
   const [pagination, setPagination] = useState({ totalPages: 1, totalItems: 0 });
@@ -35,6 +35,7 @@ export default function Product() {
     purchase_price: "",
     selling_price: "",
     stock: "",
+    image: null, // Tambahkan state image untuk file upload
     category_id: "",
     image: null, 
   });
@@ -73,9 +74,13 @@ export default function Product() {
         purchase_price: p.purchase_price !== undefined ? p.purchase_price : p.harga_beli,
         selling_price: p.selling_price !== undefined ? p.selling_price : p.harga_jual,
         stock: p.stock !== undefined ? p.stock : p.stok,
+        image: p.image || null, // Ambil properti image dari database
         category_id: p.category_id !== undefined ? p.category_id : p.kategori_id,
         image: p.image || p.foto || null,
       }));
+
+      // Urutkan dari yang terbaru (ID terbesar / produk terakhir ditambahkan berada di atas)
+      mapped.sort((a, b) => b.id - a.id);
 
       setProducts(mapped);
       
@@ -120,7 +125,24 @@ export default function Product() {
 
   const getCategoryName = (catId) => {
     const found = categories.find((c) => String(c.id) === String(catId));
-    return found ? found.nama_kategori : "-";
+    if (!found) return "-";
+
+    let current = found;
+    let isVoucherFamily = false;
+
+    while (current) {
+      if (current.nama_kategori && current.nama_kategori.toLowerCase() === "voucher") {
+        isVoucherFamily = true;
+        break;
+      }
+      current = categories.find((c) => String(c.id) === String(current.parent_id));
+    }
+
+    if (isVoucherFamily) {
+      return "Voucher";
+    }
+
+    return found.nama_kategori;
   };
 
   const level1Options = useMemo(
@@ -148,6 +170,7 @@ export default function Product() {
       purchase_price: "",
       selling_price: "",
       stock: "",
+      image: null,
       category_id: "",
       image: null,
     });
@@ -161,6 +184,7 @@ export default function Product() {
       purchase_price: product.purchase_price,
       selling_price: product.selling_price,
       stock: product.stock,
+      image: null, // Reset state image, diisi jika user memilih file baru
       category_id: product.category_id || "",
       image: product.image || null,
     });
@@ -191,6 +215,7 @@ export default function Product() {
     }
   };
 
+  // Kolom tabel dengan penambahan kolom Gambar dan penyesuaian nomor urut
   const columns = [
     {
       header: "No",
@@ -277,22 +302,22 @@ export default function Product() {
 
             <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
               {/* 4. Dropdown Sortir */}
-      <select
-  value={`${sort}-${order}`}
-  onChange={(e) => {
-    const [selectedSort, selectedOrder] = e.target.value.split("-");
-    setSort(selectedSort);
-    setOrder(selectedOrder);
-    setPage(1);
-  }}
-  className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white"
->
-  <option value="id-DESC">Terbaru</option>
-  <option value="product_name-ASC">Nama (A-Z)</option>
-  <option value="product_name-DESC">Nama (Z-A)</option>
-  <option value="selling_price-ASC">Harga Termurah</option>
-  <option value="selling_price-DESC">Harga Termahal</option>
-</select>
+            <select
+              value={`${sort}-${order}`}
+              onChange={(e) => {
+                const [selectedSort, selectedOrder] = e.target.value.split("-");
+                setSort(selectedSort);
+                setOrder(selectedOrder);
+                setPage(1);
+              }}
+              className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white"
+            >
+              <option value="id-DESC">Terbaru</option>
+              <option value="product_name-ASC">Nama (A-Z)</option>
+              <option value="product_name-DESC">Nama (Z-A)</option>
+              <option value="selling_price-ASC">Harga Termurah</option>
+              <option value="selling_price-DESC">Harga Termahal</option>
+            </select>
 
               <select
                 value={filterL1}
