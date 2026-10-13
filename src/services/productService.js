@@ -1,43 +1,26 @@
 import api from "./api";
 
-// Ambil semua produk atau filter berdasarkan kategori
-export const getProducts = async (categoryId = "") => {
-  const url = categoryId
-    ? `/products?category_id=${categoryId}`
-    : "/products";
+export async function getProducts(params) {
+  const response = await api.get("/products", { params });
+  return response.data;
+}
 
-  const response = await api.get(url);
-
-  return response.data.data;
-};
-
-// Ambil produk berdasarkan ID
-export const getProductById = async (id) => {
+export async function getProductById(id) {
   const response = await api.get(`/products/${id}`);
-
-  return response.data.data;
-};
-
-// Tambah produk
-export const createProduct = async (productData) => {
-  const response = await api.post("/products", productData);
-
   return response.data;
-};
+}
 
-// Edit produk
-export const updateProduct = async (id, productData) => {
-  const response = await api.put(
-    `/products/${id}`,
-    productData
-  );
-
+export async function createProduct(formData) {
+  const response = await api.post("/products", formData);
   return response.data;
-};
+}
 
-// Hapus produk
-export const deleteProduct = async (id) => {
+export async function updateProduct(id, formData) {
+  const response = await api.patch(`/products/${id}`, formData);
+  return response.data;
+}
+
+export async function deleteProduct(id) {
   const response = await api.delete(`/products/${id}`);
-
   return response.data;
-};
+}

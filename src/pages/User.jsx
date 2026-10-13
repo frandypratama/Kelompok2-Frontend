@@ -145,10 +145,7 @@ export default function User() {
     },
     { header: "Nama Lengkap", key: "name" },
     { header: "Username", key: "username" },
-    {
-      header: "Password",
-      render: () => "••••••••",
-    },
+  
     {
       header: "Role",
       render: (row) => (

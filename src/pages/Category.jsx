@@ -26,7 +26,7 @@ export default function Category() {
     let flatList = [];
     const recurse = (items, parentId = null) => {
       items.forEach((item) => {
-        const name = item.category_name || item.nama_kategori;
+        const name = item.category_name ||     m.nama_kategori;
         flatList.push({
           id: item.id,
           nama_kategori: name,

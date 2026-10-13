@@ -2,148 +2,177 @@ import { useState, useEffect, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import Table from "../components/Table";
+import Pagination from "../components/Pagination"; // 1. Impor komponen Pagination
 import ProductFormModal from "../components/ProductFormModal";
 import ConfirmModal from "../components/ConfirmModal";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { getProducts, createProduct, updateProduct, deleteProduct } from "../services/productService";
-
-// Data Kategori tetap menggunakan dummyCategories agar dropdown dan helper tidak berubah[cite: 3, 17]
-const dummyCategories = [
-  { id: 1, nama_kategori: "Fisik", parent_id: null },
-  { id: 2, nama_kategori: "Digital", parent_id: null },
-  { id: 3, nama_kategori: "Voucher", parent_id: 1 },
-  { id: 4, nama_kategori: "Kartu Prabayar", parent_id: 1 },
-  { id: 5, nama_kategori: "Aksesoris", parent_id: 1 },
-  { id: 6, nama_kategori: "Pulsa", parent_id: 2 },
-  { id: 7, nama_kategori: "Token Listrik", parent_id: 2 },
-  { id: 8, nama_kategori: "E-Wallet", parent_id: 2 },
-  { id: 9, nama_kategori: "Voucher Game", parent_id: 2 },
-  { id: 10, nama_kategori: "Transfer Antar Bank", parent_id: 2 },
-  { id: 11, nama_kategori: "Telkomsel", parent_id: 3 },
-  { id: 12, nama_kategori: "Tri (3)", parent_id: 3 },
-  { id: 13, nama_kategori: "Axis", parent_id: 3 },
-  { id: 14, nama_kategori: "Telkomsel Prabayar", parent_id: 4 },
-  { id: 15, nama_kategori: "Tri Prabayar", parent_id: 4 },
-  { id: 16, nama_kategori: "Axis Prabayar", parent_id: 4 },
-  { id: 17, nama_kategori: "Kabel Charger", parent_id: 5 },
-  { id: 18, nama_kategori: "Adapter Charger", parent_id: 5 },
-  { id: 19, nama_kategori: "Pulsa Telkomsel", parent_id: 6 },
-  { id: 20, nama_kategori: "Pulsa Tri", parent_id: 6 },
-  { id: 21, nama_kategori: "Pulsa Axis", parent_id: 6 },
-  { id: 22, nama_kategori: "Token PLN", parent_id: 7 },
-  { id: 23, nama_kategori: "Gopay", parent_id: 8 },
-  { id: 24, nama_kategori: "DANA", parent_id: 8 },
-  { id: 25, nama_kategori: "ShopeePay", parent_id: 8 },
-  { id: 26, nama_kategori: "Free Fire", parent_id: 9 },
-  { id: 27, nama_kategori: "Mobile Legends", parent_id: 9 },
-  { id: 28, nama_kategori: "Bank BRI", parent_id: 10 },
-  { id: 29, nama_kategori: "Bank Seabank", parent_id: 10 },
-];
+import { getCategory } from "../services/categoryService";
+import { API_URL } from "../services/api";
 
 export default function Product() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
 
-  // State Filter Cascading[cite: 3, 17]
   const [filterL1, setFilterL1] = useState("");
   const [filterL2, setFilterL2] = useState("");
   const [filterL3, setFilterL3] = useState("");
 
+
+// State untuk Pagination dan Sorting (Default: Terbaru berdasarkan id DESC)
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [sort, setSort] = useState("id"); // Ubah dari "createdAt" menjadi "id"
+  const [order, setOrder] = useState("DESC"); // "DESC" berarti dari yang terbesar (terbaru) ke terkecil
+  const [pagination, setPagination] = useState({ totalPages: 1, totalItems: 0 });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  
   const [formData, setFormData] = useState({
-    nama_produk: "",
-    harga_beli: "",
-    harga_jual: "",
-    stok: "",
-    kategori_id: "",
+    product_name: "",
+    purchase_price: "",
+    selling_price: "",
+    stock: "",
+    image: null, // Tambahkan state image untuk file upload
+    category_id: "",
+    image: null, 
   });
 
   const [deleteId, setDeleteId] = useState(null);
 
-  // Ambil data produk langsung dari database saat komponen dimuat
+  // Ambil data kategori sekali saat pertama kali dibuka
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // 3. Ambil data produk setiap kali pencarian, filter, halaman, atau sorting berubah
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [search, filterL1, filterL2, filterL3, page, limit, sort, order]);
 
   const fetchProducts = async () => {
     try {
-      const prodRes = await getProducts();
-      const productList = Array.isArray(prodRes) 
-        ? prodRes 
-        : (Array.isArray(prodRes.data) ? prodRes.data : (prodRes.data?.data || []));
+      const targetCatId = filterL3 || filterL2 || filterL1;
       
-      // Memetakan kolom database agar sesuai dengan state frontend (nama_produk, harga_beli, dll)
+      // Kirim parameter query ke backend service
+      const response = await getProducts({
+        search,
+        category_id: targetCatId,
+        page,
+        limit,
+        sort,
+        order,
+      });
+
+      const productList = response.data || [];
+      
       const mapped = productList.map(p => ({
         id: p.id,
-        nama_produk: p.product_name || p.nama_produk,
-        harga_beli: p.purchase_price !== undefined ? p.purchase_price : p.harga_beli,
-        harga_jual: p.selling_price !== undefined ? p.selling_price : p.harga_jual,
-        stok: p.stock !== undefined ? p.stock : p.stok,
-        kategori_id: p.category_id !== undefined ? p.category_id : p.kategori_id,
+        product_name: p.product_name || p.nama_produk,
+        purchase_price: p.purchase_price !== undefined ? p.purchase_price : p.harga_beli,
+        selling_price: p.selling_price !== undefined ? p.selling_price : p.harga_jual,
+        stock: p.stock !== undefined ? p.stock : p.stok,
+        image: p.image || null, // Ambil properti image dari database
+        category_id: p.category_id !== undefined ? p.category_id : p.kategori_id,
+        image: p.image || p.foto || null,
       }));
 
+      // Urutkan dari yang terbaru (ID terbesar / produk terakhir ditambahkan berada di atas)
+      mapped.sort((a, b) => b.id - a.id);
+
       setProducts(mapped);
+      
+      // Simpan informasi pagination dari backend
+      if (response.pagination) {
+        setPagination(response.pagination);
+      }
     } catch (error) {
       console.error("Gagal memuat produk dari database:", error);
     }
   };
 
-  // Helper mendapatkan nama kategori berdasarkan ID[cite: 3, 17]
+  const flattenCategories = (nestedData) => {
+    let flatList = [];
+    const recurse = (items, parentId = null) => {
+      items.forEach((item) => {
+        const name = item.category_name || item.nama_kategori;
+        flatList.push({
+          id: item.id,
+          nama_kategori: name,
+          parent_id: item.parent_id !== undefined ? item.parent_id : parentId,
+        });
+
+        if (item.subcategories && item.subcategories.length > 0) {
+          recurse(item.subcategories, item.id);
+        }
+      });
+    };
+    recurse(nestedData);
+    return flatList;
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const result = await getCategory();
+      const flatData = flattenCategories(result.data || result);
+      setCategories(flatData);
+    } catch (error) {
+      console.error("Gagal memuat kategori dari database:", error);
+    }
+  };
+
   const getCategoryName = (catId) => {
-    const found = dummyCategories.find((c) => String(c.id) === String(catId));
-    return found ? found.nama_kategori : "-";
+    const found = categories.find((c) => String(c.id) === String(catId));
+    if (!found) return "-";
+
+    let current = found;
+    let isVoucherFamily = false;
+
+    while (current) {
+      if (current.nama_kategori && current.nama_kategori.toLowerCase() === "voucher") {
+        isVoucherFamily = true;
+        break;
+      }
+      current = categories.find((c) => String(c.id) === String(current.parent_id));
+    }
+
+    if (isVoucherFamily) {
+      return "Voucher";
+    }
+
+    return found.nama_kategori;
   };
 
-  // Helper untuk mengambil semua ID anak/cucu secara rekursif[cite: 3, 17]
-  const getAllChildCategoryIds = (parentId) => {
-    let ids = [Number(parentId)];
-    const children = dummyCategories.filter((c) => c.parent_id === Number(parentId));
-    children.forEach((child) => {
-      ids = [...ids, ...getAllChildCategoryIds(child.id)];
-    });
-    return ids;
-  };
-
-  // Opsi Dropdown Filter Bertingkat[cite: 3, 17]
   const level1Options = useMemo(
-    () => dummyCategories.filter((c) => c.parent_id === null),
-    []
+    () => categories.filter((c) => c.parent_id === null || c.parent_id === undefined),
+    [categories]
   );
 
   const level2Options = useMemo(() => {
     if (!filterL1) return [];
-    return dummyCategories.filter((c) => c.parent_id === Number(filterL1));
-  }, [filterL1]);
+    return categories.filter((c) => Number(c.parent_id) === Number(filterL1));
+  }, [filterL1, categories]);
 
   const level3Options = useMemo(() => {
     if (!filterL2) return [];
-    return dummyCategories.filter((c) => c.parent_id === Number(filterL2));
-  }, [filterL2]);
+    return categories.filter((c) => Number(c.parent_id) === Number(filterL2));
+  }, [filterL2, categories]);
 
-  // Filter Produk[cite: 3, 17]
-  const filteredProducts = products.filter((p) => {
-    const matchSearch = p.nama_produk.toLowerCase().includes(search.toLowerCase());
-
-    let targetCatId = filterL3 || filterL2 || filterL1;
-    let matchCategory = true;
-
-    if (targetCatId) {
-      const allowedIds = getAllChildCategoryIds(targetCatId);
-      matchCategory = allowedIds.includes(Number(p.kategori_id));
-    }
-
-    return matchSearch && matchCategory;
-  });
-
+  // Catatan: Karena filter pencarian dan kategori kini sudah ditangani langsung di backend via API query,
+  // data pada 'products' sudah terfilter otomatis oleh backend.
+  
   const handleOpenAddModal = () => {
     setSelectedProduct(null);
     setFormData({
-      nama_produk: "",
-      harga_beli: "",
-      harga_jual: "",
-      stok: "",
-      kategori_id: "",
+      product_name: "",
+      purchase_price: "",
+      selling_price: "",
+      stock: "",
+      image: null,
+      category_id: "",
+      image: null,
     });
     setIsModalOpen(true);
   };
@@ -151,33 +180,23 @@ export default function Product() {
   const handleOpenEditModal = (product) => {
     setSelectedProduct(product);
     setFormData({
-      nama_produk: product.nama_produk,
-      harga_beli: product.harga_beli,
-      harga_jual: product.harga_jual,
-      stok: product.stok,
-      kategori_id: product.kategori_id || "",
+      product_name: product.product_name,
+      purchase_price: product.purchase_price,
+      selling_price: product.selling_price,
+      stock: product.stock,
+      image: null, // Reset state image, diisi jika user memilih file baru
+      category_id: product.category_id || "",
+      image: product.image || null,
     });
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async (e) => {
-       
-    e.preventDefault();
-    
+  const handleSubmit = async (formData) => {
     try {
-      const payload = {
-        product_name: formData.product_name,
-        purchase_price: Number(formData.purchase_price),
-        selling_price: Number(formData.selling_price),
-        stock: Number(formData.stock),
-        category_id: Number(formData.category_id),
-      };
-      // console.log("ata",payload); untuk menampilkan data terkirim dari form 
-
       if (selectedProduct) {
-        await updateProduct(selectedProduct.id, payload);
+        await updateProduct(selectedProduct.id, formData);
       } else {
-        await createProduct(payload);
+        await createProduct(formData);
       }
       setIsModalOpen(false);
       fetchProducts();
@@ -196,27 +215,45 @@ export default function Product() {
     }
   };
 
+  // Kolom tabel dengan penambahan kolom Gambar dan penyesuaian nomor urut
   const columns = [
     {
       header: "No",
-      render: (_, index) => index + 1,
+      render: (_, index) => (page - 1) * limit + index + 1, // Nomor urut menyesuaikan halaman aktif
       className: "w-16 text-center",
       tdClassName: "text-center font-medium text-slate-500",
     },
-    { header: "Nama Produk", key: "nama_produk" },
+    {
+      header: "Foto",
+      render: (row) =>
+        row.image ? (
+          <img
+            src={`${API_URL}/uploads/${row.image}`}
+            alt={row.product_name}
+            className="h-10 w-10 rounded-lg object-cover border border-slate-200 shadow-sm"
+          />
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-[10px] text-slate-400 font-medium">
+            N/A
+          </div>
+        ),
+      className: "w-20 text-center",
+      tdClassName: "text-center",
+    },
+    { header: "Nama Produk", key: "product_name" },
     {
       header: "Kategori",
-      render: (row) => getCategoryName(row.kategori_id),
+      render: (row) => getCategoryName(row.category_id),
     },
     {
       header: "Harga Beli",
-      render: (row) => `Rp ${Number(row.harga_beli).toLocaleString("id-ID")}`,
+      render: (row) => `Rp ${Number(row.purchase_price).toLocaleString("id-ID")}`,
     },
     {
       header: "Harga Jual",
-      render: (row) => `Rp ${Number(row.harga_jual).toLocaleString("id-ID")}`,
+      render: (row) => `Rp ${Number(row.selling_price).toLocaleString("id-ID")}`,
     },
-    { header: "Stok", key: "stok" },
+    { header: "Stok", key: "stock" },
     {
       header: "Aksi",
       className: "text-center",
@@ -249,27 +286,46 @@ export default function Product() {
 
         <div className="p-6 md:p-8 space-y-6">
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-3 justify-between items-center">
-            {/* Search Bar */}
             <div className="relative flex-1 w-full">
               <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Cari nama produk..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1); // Reset ke halaman 1 saat mengetik pencarian
+                }}
                 className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
               />
             </div>
 
-            {/* Cascading Filter Kategori (Logika dropdown dipertahankan utuh)[cite: 3, 17] */}
             <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
-              {/* Level 1 Filter */}
+              {/* 4. Dropdown Sortir */}
+            <select
+              value={`${sort}-${order}`}
+              onChange={(e) => {
+                const [selectedSort, selectedOrder] = e.target.value.split("-");
+                setSort(selectedSort);
+                setOrder(selectedOrder);
+                setPage(1);
+              }}
+              className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white"
+            >
+              <option value="id-DESC">Terbaru</option>
+              <option value="product_name-ASC">Nama (A-Z)</option>
+              <option value="product_name-DESC">Nama (Z-A)</option>
+              <option value="selling_price-ASC">Harga Termurah</option>
+              <option value="selling_price-DESC">Harga Termahal</option>
+            </select>
+
               <select
                 value={filterL1}
                 onChange={(e) => {
                   setFilterL1(e.target.value);
                   setFilterL2("");
                   setFilterL3("");
+                  setPage(1);
                 }}
                 className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
               >
@@ -281,13 +337,13 @@ export default function Product() {
                 ))}
               </select>
 
-              {/* Level 2 Filter */}
               {level2Options.length > 0 && (
                 <select
                   value={filterL2}
                   onChange={(e) => {
                     setFilterL2(e.target.value);
                     setFilterL3("");
+                    setPage(1);
                   }}
                   className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
                 >
@@ -300,11 +356,13 @@ export default function Product() {
                 </select>
               )}
 
-              {/* Level 3 Filter */}
               {level3Options.length > 0 && (
                 <select
                   value={filterL3}
-                  onChange={(e) => setFilterL3(e.target.value)}
+                  onChange={(e) => {
+                    setFilterL3(e.target.value);
+                    setPage(1);
+                  }}
                   className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
                 >
                   <option value="">Semua Sub-Sub-Kategori</option>
@@ -326,11 +384,24 @@ export default function Product() {
             </div>
           </div>
 
+          {/* Tabel Produk (menggunakan 'products' langsung karena data sudah dipaginasi oleh backend) */}
           <Table
             columns={columns}
-            rows={filteredProducts}
+            rows={products}
             empty="Tidak ada produk yang ditemukan."
           />
+
+          {/* 5. Bagian Informasi & Komponen Pagination */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+            <p className="text-sm text-slate-500">
+              Menampilkan {products.length} dari {pagination.totalItems} produk
+            </p>
+            <Pagination
+              page={page}
+              totalPages={pagination.totalPages}
+              onPageChange={setPage}
+            />
+          </div>
         </div>
       </main>
 
@@ -341,7 +412,7 @@ export default function Product() {
         formData={formData}
         setFormData={setFormData}
         isEdit={!!selectedProduct}
-        categories={dummyCategories}
+        categories={categories}
       />
 
       <ConfirmModal

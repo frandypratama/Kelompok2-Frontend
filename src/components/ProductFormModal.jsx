@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Modal from "./Modal";
 import InputField from "./ui/InputField";
+import { API_URL } from "../services/api"; // Sesuaikan jalur impor API_URL Anda
 
 export default function ProductFormModal({
   isOpen,
@@ -11,6 +12,9 @@ export default function ProductFormModal({
   isEdit,
   categories = [],
 }) {
+  const [imageFile, setImageFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+
   // Helper untuk menentukan selected levels berdasarkan category_id
   const getInitialLevels = () => {
     if (!formData.category_id) return { l1: "", l2: "", l3: "" };
@@ -31,24 +35,64 @@ export default function ProductFormModal({
     if (!parentCat) return { l1: "", l2: "", l3: "" };
 
     if (parentCat.parent_id === null || parentCat.parent_id === undefined) {
-      return { l1: String(parentCat.id), l2: String(currentCat.id), l3: "" };
+      return { l1: String(parentCat.parent_id), l2: String(currentCat.id), l3: "" };
     }
 
     return {
       l1: String(parentCat.parent_id),
-      l2: String(parentCat.id),
+      l2: String(currentCat.id),
       l3: String(currentCat.id),
     };
   };
 
   const [selectedLevels, setSelectedLevels] = useState(() => getInitialLevels());
 
-  // Sinkronisasi ulang state level ketika modal dibuka/diedit
+  // Sinkronisasi ulang state level dan preview gambar ketika modal dibuka/diedit
   useEffect(() => {
     if (isOpen) {
       setSelectedLevels(getInitialLevels());
+      // Jika mode edit dan produk memiliki gambar, tampilkan preview dari server
+      if (formData.image) {
+        setPreview(`${API_URL}/uploads/${formData.image}`);
+      } else {
+        setPreview(null);
+      }
+      setImageFile(null);
     }
-  }, [isOpen, formData.category_id]);
+  }, [isOpen, formData]);
+
+  // Handle pemilihan file gambar
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Ukuran foto maksimal 2 MB");
+      e.target.value = "";
+      return;
+    }
+
+    if (preview && !formData.image) URL.revokeObjectURL(preview);
+    setImageFile(file);
+    setPreview(URL.createObjectURL(file));
+  };
+
+  // Bungkus data ke FormData sebelum dikirim ke parent handler
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    const data = new FormData();
+    data.append("product_name", formData.product_name);
+    data.append("purchase_price", formData.purchase_price);
+    data.append("selling_price", formData.selling_price);
+    data.append("stock", formData.stock);
+    data.append("category_id", formData.category_id);
+
+    if (imageFile) {
+      data.append("image", imageFile); // Nama field harus "image" sesuai backend
+    }
+
+    onSubmit(data);
+  };
 
   // Filter Opsi Berdasarkan Level
   const level1Options = categories.filter(
@@ -63,7 +107,6 @@ export default function ProductFormModal({
     ? categories.filter((c) => Number(c.parent_id) === Number(selectedLevels.l2))
     : [];
 
-  // Handler Perubahan Dropdown
   const handleL1Change = (e) => {
     const val = e.target.value;
     setSelectedLevels({ l1: val, l2: "", l3: "" });
@@ -88,9 +131,9 @@ export default function ProductFormModal({
       onClose={onClose}
       title={isEdit ? "Edit Produk" : "Tambah Produk Baru"}
     >
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={handleFormSubmit} className="space-y-4">
         <InputField
-          label="Nama Produkfdgfd"
+          label="Nama Produk"
           placeholder="Masukkan nama produk"
           value={formData.product_name}
           onChange={(e) =>
@@ -129,17 +172,30 @@ export default function ProductFormModal({
           }
         />
 
+        {/* Input File Gambar Produk */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">
+            Gambar Produk (Opsional - Kosongkan jika ingin pakai gambar default kategori)
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) =>
+              setFormData({ ...formData, image: e.target.files[0] })
+            }
+            className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-lg"
+          />
+        </div>
+
         {/* Dropdown Kategori Cascading */}
         <div className="space-y-2">
           <label className="block text-xs font-semibold text-slate-600">
             Kategori
           </label>
-
-          {/* Level 1 */}
           <select
             value={selectedLevels.l1}
             onChange={handleL1Change}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none bg-white"
           >
             <option value="">Pilih Kategori Utama (Level 1)</option>
             {level1Options.map((cat) => (
@@ -149,12 +205,11 @@ export default function ProductFormModal({
             ))}
           </select>
 
-          {/* Level 2 */}
           {selectedLevels.l1 && level2Options.length > 0 && (
             <select
               value={selectedLevels.l2}
               onChange={handleL2Change}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none bg-white"
             >
               <option value="">Pilih Sub-Kategori (Level 2)</option>
               {level2Options.map((cat) => (
@@ -165,12 +220,11 @@ export default function ProductFormModal({
             </select>
           )}
 
-          {/* Level 3 */}
           {selectedLevels.l2 && level3Options.length > 0 && (
             <select
               value={selectedLevels.l3}
               onChange={handleL3Change}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none bg-white"
             >
               <option value="">Pilih Sub-Sub-Kategori (Level 3)</option>
               {level3Options.map((cat) => (
@@ -181,6 +235,31 @@ export default function ProductFormModal({
             </select>
           )}
         </div>
+
+        {/* Input Upload Gambar */}
+        <div className="space-y-1">
+          <label className="block text-xs font-semibold text-slate-600">
+            Foto Produk (JPG/PNG/WEBP, maks. 2MB)
+          </label>
+          <input
+            type="file"
+            accept=".jpg, .jpeg, .png, .webp"
+            onChange={handleFileChange}
+            className="file-input file-input-bordered w-full text-sm"
+          />
+        </div>
+
+        {/* Preview Gambar */}
+        {preview && (
+          <div>
+            <span className="block text-xs font-semibold text-slate-500 mb-1">Preview:</span>
+            <img
+              src={preview}
+              alt="Preview"
+              className="h-24 w-24 rounded-lg border object-cover shadow-sm"
+            />
+          </div>
+        )}
 
         <div className="pt-4 flex justify-end gap-2">
           <button
