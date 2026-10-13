@@ -5,7 +5,6 @@ import CategoryFormModal from "../components/CategoryFormModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { Plus, Search } from "lucide-react";
 import CategoryAccordion from "../components/CategoryAccordion";
-// Perbaikan: Sesuaikan path dan penamaan file service menjadi lowercase (categoryService.js)
 import { getCategory, createCategory, updateCategory, deleteCategory } from "../services/categoryService.js";
 
 export default function Category() {
@@ -16,7 +15,7 @@ export default function Category() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [formData, setFormData] = useState({
-    nama_kategori: "", // Diselaraskan menggunakan nama_kategori
+    nama_kategori: "",
     parent_id: null,
   });
 
@@ -26,7 +25,7 @@ export default function Category() {
     let flatList = [];
     const recurse = (items, parentId = null) => {
       items.forEach((item) => {
-        const name = item.category_name ||     m.nama_kategori;
+        const name = item.category_name || item.nama_kategori;
         flatList.push({
           id: item.id,
           nama_kategori: name,
@@ -45,7 +44,7 @@ export default function Category() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const result = await getCategory(); // Menggunakan service getCategory[cite: 24]
+      const result = await getCategory(); 
       const flatData = flattenCategories(result.data);
       setCategories(flatData);
     } catch (err) {
@@ -72,6 +71,11 @@ export default function Category() {
     return result;
   }, [categories]);
 
+  // Hanya ambil kategori level 1 untuk opsi parent agar tidak bisa membuat level 3
+  const parentOptions = useMemo(() => {
+    return sortedTreeCategories.filter((c) => c.level === 1);
+  }, [sortedTreeCategories]);
+
   const filteredCategories = sortedTreeCategories.filter((c) =>
     c.nama_kategori?.toLowerCase().includes(search.toLowerCase())
   );
@@ -95,14 +99,14 @@ export default function Category() {
     e.preventDefault();
     try {
       const payload = {
-        category_name: formData.nama_kategori, // Menyesuaikan dengan field backend
+        category_name: formData.nama_kategori, 
         parent_id: formData.parent_id,
       };
 
       if (selectedCategory) {
-        await updateCategory(selectedCategory.id, payload); // Menggunakan service update[cite: 24]
+        await updateCategory(selectedCategory.id, payload); 
       } else {
-        await createCategory(payload); // Menggunakan service create[cite: 24]
+        await createCategory(payload); 
       }
       setIsModalOpen(false);
       fetchCategories();
@@ -113,7 +117,7 @@ export default function Category() {
 
   const handleConfirmDelete = async () => {
     try {
-      await deleteCategory(deleteId); // Menggunakan service delete[cite: 24]
+      await deleteCategory(deleteId); 
       setDeleteId(null);
       fetchCategories();
     } catch (err) {
@@ -158,6 +162,10 @@ export default function Category() {
               onEdit={handleOpenEditModal}
               onDelete={(id) => setDeleteId(id)}
               onAddSub={(parentCat) => {
+                if (parentCat.level >= 2) {
+                  alert("Kategori maksimal hanya sampai level 2!");
+                  return;
+                }
                 setSelectedCategory(null);
                 setFormData({ nama_kategori: "", parent_id: parentCat.id });
                 setIsModalOpen(true);
@@ -174,7 +182,7 @@ export default function Category() {
         formData={formData}
         setFormData={setFormData}
         isEdit={!!selectedCategory}
-        categories={categories}
+        categories={parentOptions}
       />
 
       <ConfirmModal

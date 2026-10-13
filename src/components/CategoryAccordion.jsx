@@ -1,4 +1,3 @@
-import React from "react";
 import { Edit, Trash2, Plus } from "lucide-react";
 
 export default function CategoryAccordion({ categories, onEdit, onDelete, onAddSub }) {
@@ -29,13 +28,17 @@ export default function CategoryAccordion({ categories, onEdit, onDelete, onAddS
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => onAddSub(cat)}
-                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                title="Tambah Subkategori"
-              >
-                <Plus size={16} />
-              </button>
+              {/* Tombol tambah sub hanya muncul jika level masih di bawah 2 (Level 1) */}
+              {cat.level < 2 && (
+                <button
+                  onClick={() => onAddSub(cat)}
+                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Tambah Subkategori"
+                >
+                  <Plus size={16} />
+                </button>
+              )}
+              
               <button
                 onClick={() => onEdit(cat)}
                 className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"

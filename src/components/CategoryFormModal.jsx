@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function CategoryFormModal({ isOpen, onClose, onSubmit, formData, setFormData, isEdit, categories }) {
   if (!isOpen) return null;
 
@@ -18,7 +16,7 @@ export default function CategoryFormModal({ isOpen, onClose, onSubmit, formData,
               required
               value={formData.nama_kategori}
               onChange={(e) => setFormData({ ...formData, nama_kategori: e.target.value })}
-              placeholder="Contoh: Voucher, Pulsa, dll"
+              placeholder="Contoh: Sembako, Cemilan, dll"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
             />
           </div>
@@ -30,11 +28,16 @@ export default function CategoryFormModal({ isOpen, onClose, onSubmit, formData,
               onChange={(e) => setFormData({ ...formData, parent_id: e.target.value ? Number(e.target.value) : null })}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
             >
-              <option value="">-- Tanpa Induk (Kategori Utama) --</option>
+              <option value="">-- Buat sebagai Kategori Utama --</option>
               {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.nama_kategori}</option>
+                <option key={c.id} value={c.id}>
+                  {c.nama_kategori}
+                </option>
               ))}
             </select>
+            <p className="text-xs text-slate-500 mt-1">
+              *Pilih salah satu kategori di atas jika ingin menjadikannya sub-kategori, atau biarkan kosong jika ini adalah kategori utama.
+            </p>
           </div>
 
           <div className="flex justify-end gap-3 mt-6">
