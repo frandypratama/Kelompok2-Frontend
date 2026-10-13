@@ -11,6 +11,7 @@ import LaporanPenjualan from "./pages/Report";
 import Pos from "./pages/Pos";
 import TransactionHistory from "./pages/TransactionHistory";
 import ProtectedRoute from "./components/ProtectedRoute";
+import LaporanUangKeluar from "./pages/LaporanUangKeluar";
 
 
 function App() {
@@ -86,12 +87,20 @@ function App() {
           </ProtectedRoute>
         }
       />
-
+      <Route
+        path="/laporan-uang-keluar"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <LaporanUangKeluar />
+          </ProtectedRoute>
+        }
+        />
       {/* URL tidak dikenal */}
       <Route
         path="*"
         element={<Navigate to="/login" replace />}
       />
+
     </Routes>
   );
 }

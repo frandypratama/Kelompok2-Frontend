@@ -1,3 +1,4 @@
+//Kelompok2-Frontend\src\components\Sidebar.jsx
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -9,6 +10,7 @@ import {
   Store,
   Users,
   Layers,
+  Wallet,
 } from "lucide-react";
 
 const menuAdmin = [
@@ -19,6 +21,7 @@ const menuAdmin = [
   ["/pos", "Kasir", ShoppingCart],
   ["/transactions", "Transaksi", Receipt],
   ["/laporan", "Laporan", BarChart3],
+  ["/laporan-uang-keluar", "Laporan Uang Keluar", Wallet],
 ];
 
 const menuKasir = [
