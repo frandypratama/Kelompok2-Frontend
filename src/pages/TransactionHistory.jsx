@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import TransactionDetailModal from "../components/TransactionDetailModal";
+import Pagination from "../components/Pagination";
 import axios from "axios";
 import { 
   Search, 
@@ -21,17 +22,32 @@ export default function TransactionHistory() {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // State Pagination
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const [pagination, setPagination] = useState({ totalPages: 1, totalItems: 0 });
+
   // State untuk Sorting
   const [sortField, setSortField] = useState("createdAt"); 
   const [sortOrder, setSortOrder] = useState("desc"); // 'asc' | 'desc'
 
-  // Ambil data transaksi dari API backend
+  // Ambil data transaksi dari API backend dengan menyertakan page & limit
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("http://localhost:3000/api/transactions"); // Sesuaikan URL backend kamu jika berbeda
+      // Kirim parameter page, limit, paymentFilter, dan search ke backend
+      const response = await axios.get(
+        `http://localhost:3000/api/transactions?page=${page}&limit=${limit}&payment_method=${paymentFilter}&search=${search}`
+      ); 
+      
       if (response.data.success) {
-        setTransactions(response.data.data);
+        setTransactions(response.data.data || []);
+        
+        const pageData = response.data.pagination || {};
+        setPagination({
+          totalPages: pageData.totalPages || 1,
+          totalItems: pageData.totalItems || 0,
+        });
       }
     } catch (error) {
       console.error("Gagal mengambil riwayat transaksi:", error);
@@ -40,9 +56,10 @@ export default function TransactionHistory() {
     }
   };
 
+  // Jalankan ulang fetch saat page, filter pembayaran, atau pencarian berubah
   useEffect(() => {
     fetchTransactions();
-  }, []);
+  }, [page, paymentFilter, search]);
 
   // Fungsi Toggle Sorting saat Header Klik
   const handleSort = (field) => {
@@ -66,7 +83,7 @@ export default function TransactionHistory() {
     );
   };
 
-  // Process Filtering & Sorting
+  // Process Filtering & Sorting (Data per halaman)
   const processedTransactions = useMemo(() => {
     let result = transactions.filter((trx) => {
       const matchSearch = trx.invoice_no.toLowerCase().includes(search.toLowerCase());
@@ -116,7 +133,10 @@ export default function TransactionHistory() {
                 type="text"
                 placeholder="Cari No. Faktur..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all placeholder:text-slate-400"
               />
             </div>
@@ -124,7 +144,10 @@ export default function TransactionHistory() {
             <div className="w-full sm:w-auto flex items-center gap-2">
               <select
                 value={paymentFilter}
-                onChange={(e) => setPaymentFilter(e.target.value)}
+                onChange={(e) => {
+                  setPaymentFilter(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full sm:w-52 px-3 py-2.5 border border-slate-300 rounded-lg text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 cursor-pointer"
               >
                 <option value="">Semua Pembayaran</option>
@@ -136,7 +159,7 @@ export default function TransactionHistory() {
           </div>
 
           {/* TABEL RIWAYAT TRANSAKSI */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 select-none">
@@ -171,7 +194,7 @@ export default function TransactionHistory() {
                     processedTransactions.map((trx, index) => (
                       <tr key={trx.id} className="hover:bg-slate-50 transition-colors">
                         <td className="p-4 text-center font-medium text-slate-500">
-                          {index + 1}
+                          {(page - 1) * limit + index + 1}
                         </td>
                         <td className="p-4 font-semibold text-slate-900">
                           <div className="inline-flex items-center gap-2">
@@ -223,6 +246,18 @@ export default function TransactionHistory() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* BAGIAN INFORMASI & KOMPONEN PAGINATION */}
+            <div className="p-4 border-t border-slate-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-sm text-slate-500">
+                Menampilkan {processedTransactions.length} dari {pagination.totalItems} transaksi
+              </p>
+              <Pagination
+                page={page}
+                totalPages={pagination.totalPages}
+                onPageChange={setPage}
+              />
             </div>
           </div>
         </div>
