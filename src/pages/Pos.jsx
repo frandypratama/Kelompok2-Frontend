@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar";
 import PosProductCard from "../components/PosProductCard";
 import PosCartItem from "../components/PosCartItem";
 import InvoiceModal from "../components/InvoiceModal";
+import Pagination from "../components/Pagination"; // 1. Impor komponen Pagination
 import { Search, ShoppingCart, CreditCard, Banknote, QrCode, ArrowLeftRight, Loader2 } from "lucide-react";
 import { getProducts } from "../services/productService";
 import { getCategory } from "../services/categoryService";
@@ -19,6 +20,11 @@ export default function Pos() {
   const [filterL2, setFilterL2] = useState("");
   const [filterL3, setFilterL3] = useState("");
 
+  // State Pagination & Limit untuk Katalog POS
+  const [page, setPage] = useState(1);
+  const limit = 12; // Batasi 12 produk per halaman agar pas di grid kasir
+  const [pagination, setPagination] = useState({ totalPages: 1, totalItems: 0 });
+
   // Cart & Payment States
   const [cart, setCart] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("cash"); // 'cash' | 'transfer' | 'qris'
@@ -29,17 +35,29 @@ export default function Pos() {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [lastTransaction, setLastTransaction] = useState(null);
 
-  const fetchInitialData = async () => {
-    try {
-      // Mengirim limit: 50 agar semua produk dari database termuat di halaman kasir
-      const [prodRes, catRes] = await Promise.all([getProducts({ limit: 50 }), getCategory()]);
+  // Ambil data kategori sekali saat pertama kali dibuka
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
-      // 1. Processing Products Data
-      const productList = Array.isArray(prodRes)
-        ? prodRes
-        : Array.isArray(prodRes.data)
-        ? prodRes.data
-        : prodRes.data?.data || [];
+  // Ambil data produk setiap kali pencarian, filter kategori, atau halaman berubah
+  useEffect(() => {
+    fetchProducts();
+  }, [search, filterL1, filterL2, filterL3, page]);
+
+  const fetchProducts = async () => {
+    try {
+      // Tentukan target ID kategori yang sedang aktif (prioritas dari level terbawah yang dipilih)
+      const targetCatId = filterL3 || filterL2 || filterL1;
+
+      const response = await getProducts({
+        search,
+        category_id: targetCatId,
+        page,
+        limit,
+      });
+
+      const productList = response.data || [];
 
       const mappedProducts = productList.map((p) => ({
         id: p.id,
@@ -47,11 +65,26 @@ export default function Pos() {
         harga_jual: Number(p.selling_price !== undefined ? p.selling_price : p.harga_jual),
         stok: Number(p.stock !== undefined ? p.stock : p.stok),
         kategori_id: p.category_id !== undefined ? p.category_id : p.kategori_id,
-        image: p.image || p.foto || null, // Menangkap nama file foto dari database
+        image: p.image || p.foto || null,
       }));
+
       setProducts(mappedProducts);
 
-      // 2. Processing Nested Categories Data (Flatten Tree)
+      // Tangkap metadata pagination dari backend
+      if (response.pagination) {
+        setPagination({
+          totalPages: response.pagination.totalPages || 1,
+          totalItems: response.pagination.totalItems || 0,
+        });
+      }
+    } catch (err) {
+      console.error("Gagal memuat produk POS:", err);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const catRes = await getCategory();
       const rawCategoryData = Array.isArray(catRes)
         ? catRes
         : Array.isArray(catRes.data)
@@ -86,55 +119,14 @@ export default function Pos() {
       extractCategories(rawCategoryData);
       setCategories(flattenedCategories);
     } catch (err) {
-      console.error("Gagal memuat data POS:", err);
+      console.error("Gagal memuat kategori:", err);
     }
-  };
-
-  // Memanggil fetchInitialData saat komponen pertama kali dirender
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
-
-  // Helper Filter Rekursif Anak Kategori (Mengembalikan ID sendiri & seluruh ID anak/cucu)
-  const getAllChildCategoryIds = (parentId) => {
-    const numericParentId = Number(parentId);
-    let ids = [numericParentId];
-
-    const children = categories.filter((c) => Number(c.parent_id) === numericParentId);
-    children.forEach((child) => {
-      ids = [...ids, ...getAllChildCategoryIds(child.id)];
-    });
-
-    return ids;
   };
 
   const level1Options = useMemo(
     () => categories.filter((c) => c.parent_id === null || c.parent_id === 0),
     [categories]
   );
-
-  const level2Options = useMemo(() => {
-    if (!filterL1) return [];
-    return categories.filter((c) => Number(c.parent_id) === Number(filterL1));
-  }, [filterL1, categories]);
-
-  const level3Options = useMemo(() => {
-    if (!filterL2) return [];
-    return categories.filter((c) => Number(c.parent_id) === Number(filterL2));
-  }, [filterL2, categories]);
-
-  const filteredProducts = products.filter((p) => {
-    const matchSearch = p.nama_produk.toLowerCase().includes(search.toLowerCase());
-    let targetCatId = filterL3 || filterL2 || filterL1;
-    let matchCategory = true;
-
-    if (targetCatId) {
-      const allowedIds = getAllChildCategoryIds(targetCatId);
-      matchCategory = allowedIds.includes(Number(p.kategori_id));
-    }
-
-    return matchSearch && matchCategory;
-  });
 
   // Cart Operations
   const handleAddToCart = (product) => {
@@ -193,7 +185,7 @@ export default function Pos() {
 
     const transactionPayload = {
       user_id: currentUserId,
-      payment_method: paymentMethod, // 'cash' | 'transfer' | 'qris'
+      payment_method: paymentMethod,
       paid_amount: nominalBayar,
       items: cart.map((item) => ({
         product_id: item.id,
@@ -224,8 +216,8 @@ export default function Pos() {
       setCart([]);
       setBayar("");
 
-      // Refresh data produk otomatis untuk memperbarui stok dari database
-      await fetchInitialData();
+      // Refresh produk otomatis untuk memperbarui stok terbaru dari database
+      await fetchProducts();
     } catch (err) {
       console.error("Gagal melakukan transaksi:", err);
       alert(
@@ -245,7 +237,7 @@ export default function Pos() {
 
         <div className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* KATALOG PRODUK (7 Kolom) */}
-          <div className="lg:col-span-7 space-y-4">
+          <div className="lg:col-span-7 space-y-4 flex flex-col">
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
               <div className="relative">
                 <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -253,86 +245,94 @@ export default function Pos() {
                   type="text"
                   placeholder="Cari nama produk..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1); // Reset ke halaman 1 saat mengetik pencarian
+                  }}
                   className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <select
-                  value={filterL1}
-                  onChange={(e) => {
-                    setFilterL1(e.target.value);
+              {/* FILTER KATEGORI BERBENTUK TOMBOL (BUTTON/PILL) */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {/* Tombol "Semua Kategori" */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterL1("");
                     setFilterL2("");
                     setFilterL3("");
+                    setPage(1); // Reset ke halaman 1 saat kategori di-reset
                   }}
-                  className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                    filterL1 === ""
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
                 >
-                  <option value="">Semua Kategori</option>
-                  {level1Options.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nama_kategori}
-                    </option>
-                  ))}
-                </select>
+                  Semua Kategori
+                </button>
 
-                {level2Options.length > 0 && (
-                  <select
-                    value={filterL2}
-                    onChange={(e) => {
-                      setFilterL2(e.target.value);
+                {/* Daftar Tombol Kategori Utama (Level 1) */}
+                {level1Options.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      setFilterL1(c.id);
+                      setFilterL2(""); // Reset sub-kategori saat kategori utama diganti
                       setFilterL3("");
+                      setPage(1); // Reset ke halaman 1
                     }}
-                    className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                      String(filterL1) === String(c.id)
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
                   >
-                    <option value="">Semua Sub-Kategori</option>
-                    {level2Options.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nama_kategori}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {level3Options.length > 0 && (
-                  <select
-                    value={filterL3}
-                    onChange={(e) => setFilterL3(e.target.value)}
-                    className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-                  >
-                    <option value="">Semua Sub-Sub-Kategori</option>
-                    {level3Options.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nama_kategori}
-                      </option>
-                    ))}
-                  </select>
-                )}
+                    {c.nama_kategori}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => {
-                  const itemInCart = cart.find((i) => i.id === product.id);
-                  const currentQty = itemInCart ? itemInCart.qty : 0;
-                  const availableStock = product.stok - currentQty;
+            {/* GRID PRODUK & PAGINATION */}
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between flex-1 space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 content-start">
+                {products.length > 0 ? (
+                  products.map((product) => {
+                    const itemInCart = cart.find((i) => i.id === product.id);
+                    const currentQty = itemInCart ? itemInCart.qty : 0;
+                    const availableStock = product.stok - currentQty;
 
-                  return (
-                    <PosProductCard
-                      key={product.id}
-                      product={product}
-                      onAddToCart={handleAddToCart}
-                      availableStock={availableStock}
-                      currentQty={currentQty}
-                    />
-                  );
-                })
-              ) : (
-                <div className="col-span-full bg-white p-8 rounded-xl border border-slate-200 text-center text-slate-400 text-sm">
-                  Tidak ada produk ditemukan.
-                </div>
-              )}
+                    return (
+                      <PosProductCard
+                        key={product.id}
+                        product={product}
+                        onAddToCart={handleAddToCart}
+                        availableStock={availableStock}
+                        currentQty={currentQty}
+                      />
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full py-16 text-center text-slate-400 text-sm">
+                    Tidak ada produk ditemukan.
+                  </div>
+                )}
+              </div>
+
+              {/* FOOTER: INFO & KOMPONEN PAGINATION */}
+              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <p className="text-xs text-slate-500">
+                  Menampilkan halaman {page} dari {pagination.totalPages} ({pagination.totalItems} total produk)
+                </p>
+                <Pagination
+                  page={page}
+                  totalPages={pagination.totalPages}
+                  onPageChange={setPage}
+                />
+              </div>
             </div>
           </div>
 
@@ -429,7 +429,7 @@ export default function Pos() {
                 </div>
               </div>
 
-              {/* INPUT NOMINAL TUNAI (Hanya jika memilih CASH) */}
+              {/* INPUT NOMINAL TUNAI */}
               {paymentMethod === "cash" ? (
                 <>
                   <div>
