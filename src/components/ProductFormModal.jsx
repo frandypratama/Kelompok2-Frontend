@@ -14,53 +14,41 @@ export default function ProductFormModal({
 }) {
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
+  
+  // State untuk menampung pilihan Kategori Utama (Level 1) dan Sub-Kategori (Level 2)
+  const [selectedParentId, setSelectedParentId] = useState("");
+  const [selectedSubCatId, setSelectedSubCatId] = useState("");
 
-  // Helper untuk menentukan selected levels berdasarkan category_id
-  const getInitialLevels = () => {
-    if (!formData.category_id) return { l1: "", l2: "", l3: "" };
-
-    const catId = Number(formData.category_id);
-    const currentCat = categories.find((c) => Number(c.id) === catId);
-
-    if (!currentCat) return { l1: "", l2: "", l3: "" };
-
-    if (currentCat.parent_id === null || currentCat.parent_id === undefined) {
-      return { l1: String(currentCat.id), l2: "", l3: "" };
-    }
-
-    const parentCat = categories.find(
-      (c) => Number(c.id) === Number(currentCat.parent_id)
-    );
-
-    if (!parentCat) return { l1: "", l2: "", l3: "" };
-
-    if (parentCat.parent_id === null || parentCat.parent_id === undefined) {
-      return { l1: String(parentCat.parent_id), l2: String(currentCat.id), l3: "" };
-    }
-
-    return {
-      l1: String(parentCat.parent_id),
-      l2: String(currentCat.id),
-      l3: String(currentCat.id),
-    };
-  };
-
-  const [selectedLevels, setSelectedLevels] = useState(() => getInitialLevels());
-
-  // Sinkronisasi ulang state level dan preview gambar ketika modal dibuka/diedit
   useEffect(() => {
     if (isOpen) {
-      setSelectedLevels(getInitialLevels());
       if (formData.image) {
         setPreview(`${API_URL}/uploads/${formData.image}`);
       } else {
         setPreview(null);
       }
       setImageFile(null);
-    }
-  }, [isOpen, formData]);
 
-  // Handle pemilihan file gambar yang bersih dan terpusat
+      // Inisialisasi data saat modal dibuka / diedit
+      if (formData.category_id) {
+        const currentCat = categories.find((c) => Number(c.id) === Number(formData.category_id));
+        if (currentCat) {
+          if (currentCat.parent_id) {
+            // Jika yang tersimpan adalah sub-kategori
+            setSelectedParentId(String(currentCat.parent_id));
+            setSelectedSubCatId(String(currentCat.id));
+          } else {
+            // Jika yang tersimpan adalah kategori utama
+            setSelectedParentId(String(currentCat.id));
+            setSelectedSubCatId("");
+          }
+        }
+      } else {
+        setSelectedParentId("");
+        setSelectedSubCatId("");
+      }
+    }
+  }, [isOpen, formData, categories]);
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -76,7 +64,6 @@ export default function ProductFormModal({
     setPreview(URL.createObjectURL(file));
   };
 
-  // Bungkus data ke FormData sebelum dikirim ke parent handler
   const handleFormSubmit = (e) => {
     e.preventDefault();
     const data = new FormData();
@@ -84,9 +71,11 @@ export default function ProductFormModal({
     data.append("purchase_price", formData.purchase_price);
     data.append("selling_price", formData.selling_price);
     data.append("stock", formData.stock);
-    data.append("category_id", formData.category_id);
 
-    // Kirim file gambar dengan key "image" (sesuai upload.single("image") di backend)
+    // KUNCI: Kirim ID sub-kategori jika dipilih, jika tidak kirim ID kategori utama ke database
+    const finalCategoryId = selectedSubCatId || selectedParentId;
+    data.append("category_id", finalCategoryId);
+
     if (imageFile) {
       data.append("image", imageFile);
     }
@@ -94,36 +83,15 @@ export default function ProductFormModal({
     onSubmit(data);
   };
 
-  // Filter Opsi Berdasarkan Level
+  // Kategori Utama (Level 1)
   const level1Options = categories.filter(
-    (c) => c.parent_id === null || c.parent_id === undefined
+    (c) => c.parent_id === null || c.parent_id === undefined || c.parent_id === 0
   );
 
-  const level2Options = selectedLevels.l1
-    ? categories.filter((c) => Number(c.parent_id) === Number(selectedLevels.l1))
+  // Sub-Kategori (Level 2) berdasarkan Kategori Utama yang dipilih
+  const level2Options = selectedParentId
+    ? categories.filter((c) => Number(c.parent_id) === Number(selectedParentId))
     : [];
-
-  const level3Options = selectedLevels.l2
-    ? categories.filter((c) => Number(c.parent_id) === Number(selectedLevels.l2))
-    : [];
-
-  const handleL1Change = (e) => {
-    const val = e.target.value;
-    setSelectedLevels({ l1: val, l2: "", l3: "" });
-    setFormData((prev) => ({ ...prev, category_id: val }));
-  };
-
-  const handleL2Change = (e) => {
-    const val = e.target.value;
-    setSelectedLevels((prev) => ({ ...prev, l2: val, l3: "" }));
-    setFormData((prev) => ({ ...prev, category_id: val || selectedLevels.l1 }));
-  };
-
-  const handleL3Change = (e) => {
-    const val = e.target.value;
-    setSelectedLevels((prev) => ({ ...prev, l3: val }));
-    setFormData((prev) => ({ ...prev, category_id: val || selectedLevels.l2 }));
-  };
 
   return (
     <Modal
@@ -172,17 +140,20 @@ export default function ProductFormModal({
           }
         />
 
-        {/* Dropdown Kategori Cascading */}
+        {/* Dropdown Kategori Utama (Parent) */}
         <div className="space-y-2">
           <label className="block text-xs font-semibold text-slate-600">
-            Kategori
+            Kategori Utama
           </label>
           <select
-            value={selectedLevels.l1}
-            onChange={handleL1Change}
+            value={selectedParentId}
+            onChange={(e) => {
+              setSelectedParentId(e.target.value);
+              setSelectedSubCatId(""); // Reset sub-kategori saat parent diubah
+            }}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none bg-white"
           >
-            <option value="">Pilih Kategori Utama (Level 1)</option>
+            <option value="">Pilih Kategori Utama</option>
             {level1Options.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.category_name || cat.nama_kategori}
@@ -190,38 +161,29 @@ export default function ProductFormModal({
             ))}
           </select>
 
-          {selectedLevels.l1 && level2Options.length > 0 && (
-            <select
-              value={selectedLevels.l2}
-              onChange={handleL2Change}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none bg-white"
-            >
-              <option value="">Pilih Sub-Kategori (Level 2)</option>
-              {level2Options.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.category_name || cat.nama_kategori}
-                </option>
-              ))}
-            </select>
-          )}
-
-          {selectedLevels.l2 && level3Options.length > 0 && (
-            <select
-              value={selectedLevels.l3}
-              onChange={handleL3Change}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none bg-white"
-            >
-              <option value="">Pilih Sub-Sub-Kategori (Level 3)</option>
-              {level3Options.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.category_name || cat.nama_kategori}
-                </option>
-              ))}
-            </select>
+          {/* Dropdown Sub-Kategori */}
+          {selectedParentId && level2Options.length > 0 && (
+            <>
+              <label className="block text-xs font-semibold text-slate-600 pt-1">
+                Sub-Kategori
+              </label>
+              <select
+                value={selectedSubCatId}
+                onChange={(e) => setSelectedSubCatId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none bg-white"
+              >
+                <option value="">Pilih Sub-Kategori</option>
+                {level2Options.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.category_name || cat.nama_kategori}
+                  </option>
+                ))}
+              </select>
+            </>
           )}
         </div>
 
-        {/* Input Upload Gambar (Hanya satu yang aktif dan benar) */}
+        {/* Input Upload Gambar */}
         <div className="space-y-1">
           <label className="block text-xs font-semibold text-slate-600">
             Foto Produk (JPG/PNG/WEBP, maks. 2MB)
@@ -234,7 +196,6 @@ export default function ProductFormModal({
           />
         </div>
 
-        {/* Preview Gambar */}
         {preview && (
           <div>
             <span className="block text-xs font-semibold text-slate-500 mb-1">Preview:</span>

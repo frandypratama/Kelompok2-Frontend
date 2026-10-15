@@ -2,30 +2,26 @@ import { useState, useEffect, useMemo } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import Table from "../components/Table";
-import Pagination from "../components/Pagination"; // 1. Impor komponen Pagination
+import Pagination from "../components/Pagination";
 import ProductFormModal from "../components/ProductFormModal";
 import ConfirmModal from "../components/ConfirmModal";
-import { Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Pencil, Trash2 } from "lucide-react";
 import { getProducts, createProduct, updateProduct, deleteProduct } from "../services/productService";
 import { getCategory } from "../services/categoryService";
 import { API_URL } from "../services/api";
 
 export default function Product() {
-  const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
 
   const [filterL1, setFilterL1] = useState("");
   const [filterL2, setFilterL2] = useState("");
-  const [filterL3, setFilterL3] = useState("");
 
-
-// State untuk Pagination dan Sorting (Default: Terbaru berdasarkan id DESC)
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [sort, setSort] = useState("id"); // Ubah dari "createdAt" menjadi "id"
-  const [order, setOrder] = useState("DESC"); // "DESC" berarti dari yang terbesar (terbaru) ke terkecil
-  const [pagination, setPagination] = useState({ totalPages: 1, totalItems: 0 });
+  const limit = 10;
+  const [sort, setSort] = useState("id");
+  const [order, setOrder] = useState("DESC");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -35,59 +31,49 @@ export default function Product() {
     purchase_price: "",
     selling_price: "",
     stock: "",
-    image: null, // Tambahkan state image untuk file upload
+    image: null,
     category_id: "",
-    image: null, 
   });
 
   const [deleteId, setDeleteId] = useState(null);
 
-  // Ambil data kategori sekali saat pertama kali dibuka
   useEffect(() => {
     fetchCategories();
+    fetchProducts();
   }, []);
 
-  // 3. Ambil data produk setiap kali pencarian, filter, halaman, atau sorting berubah
-  useEffect(() => {
-    fetchProducts();
-  }, [search, filterL1, filterL2, filterL3, page, limit, sort, order]);
+  const getAllChildCategoryIds = (parentId) => {
+    const numericParentId = Number(parentId);
+    let ids = [numericParentId];
+
+    const children = categories.filter((c) => Number(c.parent_id) === numericParentId);
+    children.forEach((child) => {
+      ids = [...ids, ...getAllChildCategoryIds(child.id)];
+    });
+
+    return ids;
+  };
 
   const fetchProducts = async () => {
     try {
-      const targetCatId = filterL3 || filterL2 || filterL1;
-      
-      // Kirim parameter query ke backend service
       const response = await getProducts({
-        search,
-        category_id: targetCatId,
-        page,
-        limit,
-        sort,
-        order,
+        limit: 1000,
       });
 
-      const productList = response.data || [];
+      let productList = response.data || [];
       
-      const mapped = productList.map(p => ({
+      let mapped = productList.map(p => ({
         id: p.id,
         product_name: p.product_name || p.nama_produk,
         purchase_price: p.purchase_price !== undefined ? p.purchase_price : p.harga_beli,
         selling_price: p.selling_price !== undefined ? p.selling_price : p.harga_jual,
         stock: p.stock !== undefined ? p.stock : p.stok,
-        image: p.image || null, // Ambil properti image dari database
-        category_id: p.category_id !== undefined ? p.category_id : p.kategori_id,
         image: p.image || p.foto || null,
+        category_id: p.category_id !== undefined ? p.category_id : p.kategori_id,
+        sub_category_id: p.sub_category_id || null,
       }));
 
-      // Urutkan dari yang terbaru (ID terbesar / produk terakhir ditambahkan berada di atas)
-      mapped.sort((a, b) => b.id - a.id);
-
-      setProducts(mapped);
-      
-      // Simpan informasi pagination dari backend
-      if (response.pagination) {
-        setPagination(response.pagination);
-      }
+      setAllProducts(mapped);
     } catch (error) {
       console.error("Gagal memuat produk dari database:", error);
     }
@@ -123,30 +109,63 @@ export default function Product() {
     }
   };
 
-  const getCategoryName = (catId) => {
-    const found = categories.find((c) => String(c.id) === String(catId));
+  const getCategoryName = (row) => {
+    const targetId = row.sub_category_id || row.category_id;
+    const found = categories.find((c) => String(c.id) === String(targetId));
     if (!found) return "-";
 
-    let current = found;
-    let isVoucherFamily = false;
-
-    while (current) {
-      if (current.nama_kategori && current.nama_kategori.toLowerCase() === "voucher") {
-        isVoucherFamily = true;
-        break;
+    if (found.parent_id) {
+      const parentFound = categories.find((c) => String(c.id) === String(found.parent_id));
+      if (parentFound) {
+        return `${parentFound.nama_kategori} > ${found.nama_kategori}`;
       }
-      current = categories.find((c) => String(c.id) === String(current.parent_id));
-    }
-
-    if (isVoucherFamily) {
-      return "Voucher";
     }
 
     return found.nama_kategori;
   };
 
+  const filteredProducts = useMemo(() => {
+    let result = [...allProducts];
+
+    if (search) {
+      result = result.filter((p) =>
+        p.product_name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    if (filterL2) {
+      result = result.filter((p) => String(p.category_id) === String(filterL2));
+    } else if (filterL1) {
+      const validCategoryIds = getAllChildCategoryIds(filterL1).map((id) => String(id));
+      result = result.filter((p) => validCategoryIds.includes(String(p.category_id)));
+    }
+
+    result.sort((a, b) => {
+      if (sort === "product_name") {
+        return order === "ASC"
+          ? a.product_name.localeCompare(b.product_name)
+          : b.product_name.localeCompare(a.product_name);
+      }
+      if (sort === "selling_price") {
+        return order === "ASC"
+          ? a.selling_price - b.selling_price
+          : b.selling_price - a.selling_price;
+      }
+      return order === "ASC" ? a.id - b.id : b.id - a.id;
+    });
+
+    return result;
+  }, [allProducts, search, filterL1, filterL2, sort, order, categories]);
+
+  const totalPages = Math.ceil(filteredProducts.length / limit) || 1;
+
+  const paginatedProducts = useMemo(() => {
+    const start = (page - 1) * limit;
+    return filteredProducts.slice(start, start + limit);
+  }, [filteredProducts, page, limit]);
+
   const level1Options = useMemo(
-    () => categories.filter((c) => c.parent_id === null || c.parent_id === undefined),
+    () => categories.filter((c) => c.parent_id === null || c.parent_id === undefined || c.parent_id === 0),
     [categories]
   );
 
@@ -155,14 +174,6 @@ export default function Product() {
     return categories.filter((c) => Number(c.parent_id) === Number(filterL1));
   }, [filterL1, categories]);
 
-  const level3Options = useMemo(() => {
-    if (!filterL2) return [];
-    return categories.filter((c) => Number(c.parent_id) === Number(filterL2));
-  }, [filterL2, categories]);
-
-  // Catatan: Karena filter pencarian dan kategori kini sudah ditangani langsung di backend via API query,
-  // data pada 'products' sudah terfilter otomatis oleh backend.
-  
   const handleOpenAddModal = () => {
     setSelectedProduct(null);
     setFormData({
@@ -172,7 +183,6 @@ export default function Product() {
       stock: "",
       image: null,
       category_id: "",
-      image: null,
     });
     setIsModalOpen(true);
   };
@@ -184,19 +194,18 @@ export default function Product() {
       purchase_price: product.purchase_price,
       selling_price: product.selling_price,
       stock: product.stock,
-      image: null, // Reset state image, diisi jika user memilih file baru
-      category_id: product.category_id || "",
       image: product.image || null,
+      category_id: product.category_id || "",
     });
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async (formData) => {
+  const handleSubmit = async (formDataPayload) => {
     try {
       if (selectedProduct) {
-        await updateProduct(selectedProduct.id, formData);
+        await updateProduct(selectedProduct.id, formDataPayload);
       } else {
-        await createProduct(formData);
+        await createProduct(formDataPayload);
       }
       setIsModalOpen(false);
       fetchProducts();
@@ -215,11 +224,10 @@ export default function Product() {
     }
   };
 
-  // Kolom tabel dengan penambahan kolom Gambar dan penyesuaian nomor urut
   const columns = [
     {
       header: "No",
-      render: (_, index) => (page - 1) * limit + index + 1, // Nomor urut menyesuaikan halaman aktif
+      render: (_, index) => (page - 1) * limit + index + 1,
       className: "w-16 text-center",
       tdClassName: "text-center font-medium text-slate-500",
     },
@@ -243,7 +251,40 @@ export default function Product() {
     { header: "Nama Produk", key: "product_name" },
     {
       header: "Kategori",
-      render: (row) => getCategoryName(row.category_id),
+      render: (row) => {
+        const targetId = row.sub_category_id || row.category_id;
+        const found = categories.find((c) => String(c.id) === String(targetId));
+        if (!found) return <span className="text-slate-400">-</span>;
+
+        let parentName = "";
+        let subName = "";
+
+        if (found.parent_id) {
+          const parentFound = categories.find((c) => String(c.id) === String(found.parent_id));
+          if (parentFound) {
+            parentName = parentFound.nama_kategori;
+            subName = found.nama_kategori;
+          }
+        } else {
+          parentName = found.nama_kategori;
+        }
+
+        return (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+              {parentName}
+            </span>
+            {subName && (
+              <>
+                <span className="text-slate-400 text-xs">/</span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                  {subName}
+                </span>
+              </>
+            )}
+          </div>
+        );
+      },
     },
     {
       header: "Harga Beli",
@@ -294,37 +335,35 @@ export default function Product() {
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
-                  setPage(1); // Reset ke halaman 1 saat mengetik pencarian
+                  setPage(1);
                 }}
                 className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
               />
             </div>
 
             <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
-              {/* 4. Dropdown Sortir */}
-            <select
-              value={`${sort}-${order}`}
-              onChange={(e) => {
-                const [selectedSort, selectedOrder] = e.target.value.split("-");
-                setSort(selectedSort);
-                setOrder(selectedOrder);
-                setPage(1);
-              }}
-              className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white"
-            >
-              <option value="id-DESC">Terbaru</option>
-              <option value="product_name-ASC">Nama (A-Z)</option>
-              <option value="product_name-DESC">Nama (Z-A)</option>
-              <option value="selling_price-ASC">Harga Termurah</option>
-              <option value="selling_price-DESC">Harga Termahal</option>
-            </select>
+              <select
+                value={`${sort}-${order}`}
+                onChange={(e) => {
+                  const [selectedSort, selectedOrder] = e.target.value.split("-");
+                  setSort(selectedSort);
+                  setOrder(selectedOrder);
+                  setPage(1);
+                }}
+                className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 bg-white"
+              >
+                <option value="id-DESC">Terbaru</option>
+                <option value="product_name-ASC">Nama (A-Z)</option>
+                <option value="product_name-DESC">Nama (Z-A)</option>
+                <option value="selling_price-ASC">Harga Termurah</option>
+                <option value="selling_price-DESC">Harga Termahal</option>
+              </select>
 
               <select
                 value={filterL1}
                 onChange={(e) => {
                   setFilterL1(e.target.value);
                   setFilterL2("");
-                  setFilterL3("");
                   setPage(1);
                 }}
                 className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
@@ -342,31 +381,12 @@ export default function Product() {
                   value={filterL2}
                   onChange={(e) => {
                     setFilterL2(e.target.value);
-                    setFilterL3("");
                     setPage(1);
                   }}
                   className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
                 >
                   <option value="">Semua Sub-Kategori</option>
                   {level2Options.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nama_kategori}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              {level3Options.length > 0 && (
-                <select
-                  value={filterL3}
-                  onChange={(e) => {
-                    setFilterL3(e.target.value);
-                    setPage(1);
-                  }}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-white"
-                >
-                  <option value="">Semua Sub-Sub-Kategori</option>
-                  {level3Options.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.nama_kategori}
                     </option>
@@ -384,23 +404,24 @@ export default function Product() {
             </div>
           </div>
 
-          {/* Tabel Produk (menggunakan 'products' langsung karena data sudah dipaginasi oleh backend) */}
-          <Table
-            columns={columns}
-            rows={products}
-            empty="Tidak ada produk yang ditemukan."
-          />
-
-          {/* 5. Bagian Informasi & Komponen Pagination */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-            <p className="text-sm text-slate-500">
-              Menampilkan {products.length} dari {pagination.totalItems} produk
-            </p>
-            <Pagination
-              page={page}
-              totalPages={pagination.totalPages}
-              onPageChange={setPage}
+          {/* TABEL DAN INFO/PAGINATION MENYATU DALAM SATU CONTAINER CARD */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <Table
+              columns={columns}
+              rows={paginatedProducts}
+              empty="Tidak ada produk yang ditemukan."
             />
+
+            <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
+              <p className="text-sm text-slate-500">
+                Menampilkan {paginatedProducts.length} dari {filteredProducts.length} produk
+              </p>
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </div>
           </div>
         </div>
       </main>

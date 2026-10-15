@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 import PosProductCard from "../components/PosProductCard";
 import PosCartItem from "../components/PosCartItem";
 import InvoiceModal from "../components/InvoiceModal";
-import Pagination from "../components/Pagination"; // 1. Impor komponen Pagination
+import Pagination from "../components/Pagination";
 import { Search, ShoppingCart, CreditCard, Banknote, QrCode, ArrowLeftRight, Loader2 } from "lucide-react";
 import { getProducts } from "../services/productService";
 import { getCategory } from "../services/categoryService";
@@ -15,10 +15,8 @@ export default function Pos() {
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
 
-  // Cascading Category Filter
-  const [filterL1, setFilterL1] = useState("");
-  const [filterL2, setFilterL2] = useState("");
-  const [filterL3, setFilterL3] = useState("");
+  // Filter Kategori cukup satu state untuk Kategori Utama (Parent)
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   // State Pagination & Limit untuk Katalog POS
   const [page, setPage] = useState(1);
@@ -43,23 +41,33 @@ export default function Pos() {
   // Ambil data produk setiap kali pencarian, filter kategori, atau halaman berubah
   useEffect(() => {
     fetchProducts();
-  }, [search, filterL1, filterL2, filterL3, page]);
+  }, [search, selectedCategory, page]);
+
+  // Helper rekursif untuk mendapatkan seluruh ID anak kategori di bawah kategori utama
+  const getAllChildCategoryIds = (parentId) => {
+    const numericParentId = Number(parentId);
+    let ids = [numericParentId];
+
+    const children = categories.filter((c) => Number(c.parent_id) === numericParentId);
+    children.forEach((child) => {
+      ids = [...ids, ...getAllChildCategoryIds(child.id)];
+    });
+
+    return ids;
+  };
 
   const fetchProducts = async () => {
     try {
-      // Tentukan target ID kategori yang sedang aktif (prioritas dari level terbawah yang dipilih)
-      const targetCatId = filterL3 || filterL2 || filterL1;
-
+      // Ambil produk dari backend (tanpa mengirim category_id agar backend tidak error)
       const response = await getProducts({
         search,
-        category_id: targetCatId,
         page,
         limit,
       });
 
-      const productList = response.data || [];
+      let productList = response.data || [];
 
-      const mappedProducts = productList.map((p) => ({
+      let mappedProducts = productList.map((p) => ({
         id: p.id,
         nama_produk: p.product_name || p.nama_produk,
         harga_jual: Number(p.selling_price !== undefined ? p.selling_price : p.harga_jual),
@@ -67,6 +75,12 @@ export default function Pos() {
         kategori_id: p.category_id !== undefined ? p.category_id : p.kategori_id,
         image: p.image || p.foto || null,
       }));
+
+      // --- FILTER KATEGORI UTAMA SECARA LOKAL DI FRONTEND ---
+      if (selectedCategory) {
+        const validCategoryIds = getAllChildCategoryIds(selectedCategory).map((id) => String(id));
+        mappedProducts = mappedProducts.filter((p) => validCategoryIds.includes(String(p.kategori_id)));
+      }
 
       setProducts(mappedProducts);
 
@@ -123,8 +137,9 @@ export default function Pos() {
     }
   };
 
+  // Hanya ambil kategori Level 1 (Kategori Utama / Parent)
   const level1Options = useMemo(
-    () => categories.filter((c) => c.parent_id === null || c.parent_id === 0),
+    () => categories.filter((c) => c.parent_id === null || c.parent_id === undefined || c.parent_id === 0),
     [categories]
   );
 
@@ -216,7 +231,6 @@ export default function Pos() {
       setCart([]);
       setBayar("");
 
-      // Refresh produk otomatis untuk memperbarui stok terbaru dari database
       await fetchProducts();
     } catch (err) {
       console.error("Gagal melakukan transaksi:", err);
@@ -247,25 +261,22 @@ export default function Pos() {
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
-                    setPage(1); // Reset ke halaman 1 saat mengetik pencarian
+                    setPage(1);
                   }}
                   className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
               </div>
 
-              {/* FILTER KATEGORI BERBENTUK TOMBOL (BUTTON/PILL) */}
+              {/* FILTER KATEGORI UTAMA BERBENTUK TOMBOL (BUTTON/PILL) */}
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                {/* Tombol "Semua Kategori" */}
                 <button
                   type="button"
                   onClick={() => {
-                    setFilterL1("");
-                    setFilterL2("");
-                    setFilterL3("");
-                    setPage(1); // Reset ke halaman 1 saat kategori di-reset
+                    setSelectedCategory("");
+                    setPage(1);
                   }}
                   className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
-                    filterL1 === ""
+                    selectedCategory === ""
                       ? "bg-blue-600 text-white shadow-sm"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
@@ -273,19 +284,16 @@ export default function Pos() {
                   Semua Kategori
                 </button>
 
-                {/* Daftar Tombol Kategori Utama (Level 1) */}
                 {level1Options.map((c) => (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => {
-                      setFilterL1(c.id);
-                      setFilterL2(""); // Reset sub-kategori saat kategori utama diganti
-                      setFilterL3("");
-                      setPage(1); // Reset ke halaman 1
+                      setSelectedCategory(c.id);
+                      setPage(1);
                     }}
                     className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
-                      String(filterL1) === String(c.id)
+                      String(selectedCategory) === String(c.id)
                         ? "bg-blue-600 text-white shadow-sm"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
