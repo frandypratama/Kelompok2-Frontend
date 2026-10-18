@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
-import Sidebar from "../layouts/Sidebar";
-import Navbar from "../layouts/Navbar";
-import Table from "../components/ui/Table";
-import UserFormModal from "../components/UserFormModal";
-import ConfirmModal from "../components/ui/ConfirmModal";
+import Sidebar from "../../layouts/Sidebar";
+import Navbar from "../../layouts/Navbar";
+import Table from "../../components/ui/Table";
+import UserFormModal from "./UserFormModal";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 import { UserPlus, Search, Pencil, Trash2, Loader2 } from "lucide-react";
 import {
   getUsers,
   createUser,
   updateUser,
   deleteUser,
-} from "../services/userService";
+} from "../../services/userService";
 
 export default function User() {
   const [users, setUsers] = useState([]);
