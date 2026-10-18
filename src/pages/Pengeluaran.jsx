@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "../layouts/Sidebar";
 
 const API_URL = (
   import.meta.env.VITE_API_URL || "http://localhost:3000"

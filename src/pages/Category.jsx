@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
+import Sidebar from "../layouts/Sidebar";
+import Navbar from "../layouts/Navbar";
 import CategoryFormModal from "../components/CategoryFormModal";
 import ConfirmModal from "../components/ConfirmModal";
 import { Plus, Search } from "lucide-react";

@@ -15,8 +15,8 @@ import {
 } from "lucide-react";
 
 import api from "../services/api";
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
+import Sidebar from "../layouts/Sidebar";
+import Navbar from "../layouts/Navbar";
 import TransactionDetailModal from "../components/TransactionDetailModal";
 
 export default function LaporanPenjualan() {

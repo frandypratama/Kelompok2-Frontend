@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
+import Sidebar from "../layouts/Sidebar";
+import Navbar from "../layouts/Navbar";
 import TransactionDetailModal from "../components/TransactionDetailModal";
 import Pagination from "../components/Pagination";
 import axios from "axios";

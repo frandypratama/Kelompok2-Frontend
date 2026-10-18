@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
+import Sidebar from "../layouts/Sidebar";
+import Navbar from "../layouts/Navbar";
 import StatCard from "../components/StatCard";
 import Table from "../components/Table";
 import { DollarSign, ShoppingCart, Package, AlertTriangle, Receipt } from "lucide-react";

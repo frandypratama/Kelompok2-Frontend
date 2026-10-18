@@ -14,7 +14,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import api from "../services/api";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "../layouts/Sidebar";
 
 const formatRupiah = (value) =>
   new Intl.NumberFormat("id-ID", {
