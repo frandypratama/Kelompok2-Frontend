@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../layouts/Sidebar";
 import Navbar from "../layouts/Navbar";
-import StatCard from "../components/StatCard";
-import Table from "../components/Table";
+import StatCard from "../components/ui/StatCard";
+import Table from "../components/ui/Table";
 import { DollarSign, ShoppingCart, Package, AlertTriangle, Receipt } from "lucide-react";
 import { getTransactions } from "../services/transactionService";
 import { getProducts } from "../services/productService";

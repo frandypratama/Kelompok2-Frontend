@@ -1,4 +1,4 @@
-import Modal from "./Modal";
+import Modal from "./ui/Modal";
 import { CheckCircle, Printer } from "lucide-react";
 
 export default function InvoiceModal({ isOpen, onClose, transactionData }) {

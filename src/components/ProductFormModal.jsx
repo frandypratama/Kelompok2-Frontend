@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Modal from "./Modal";
+import Modal from "./ui/Modal";
 import InputField from "./ui/InputField";
 import { API_URL } from "../services/api";
 

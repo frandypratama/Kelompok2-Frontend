@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../layouts/Sidebar";
 import Navbar from "../layouts/Navbar";
-import Table from "../components/Table";
+import Table from "../components/ui/Table";
 import UserFormModal from "../components/UserFormModal";
-import ConfirmModal from "../components/ConfirmModal";
+import ConfirmModal from "../components/ui/ConfirmModal";
 import { UserPlus, Search, Pencil, Trash2, Loader2 } from "lucide-react";
 import {
   getUsers,

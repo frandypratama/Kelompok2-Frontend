@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import Sidebar from "../layouts/Sidebar";
 import Navbar from "../layouts/Navbar";
-import Table from "../components/Table";
-import Pagination from "../components/Pagination";
+import Table from "../components/ui/Table";
+import Pagination from "../components/ui/Pagination";
 import ProductFormModal from "../components/ProductFormModal";
-import ConfirmModal from "../components/ConfirmModal";
+import ConfirmModal from "../components/ui/ConfirmModal";
 import { Plus, Search, Pencil, Trash2 } from "lucide-react";
 import { getProducts, createProduct, updateProduct, deleteProduct } from "../services/productService";
 import { getCategory } from "../services/categoryService";

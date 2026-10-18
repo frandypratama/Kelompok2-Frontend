@@ -4,7 +4,7 @@ import Navbar from "../layouts/Navbar";
 import PosProductCard from "../components/PosProductCard";
 import PosCartItem from "../components/PosCartItem";
 import InvoiceModal from "../components/InvoiceModal";
-import Pagination from "../components/Pagination";
+import Pagination from "../components/ui/Pagination";
 import { Search, ShoppingCart, CreditCard, Banknote, QrCode, ArrowLeftRight, Loader2 } from "lucide-react";
 import { getProducts } from "../services/productService";
 import { getCategory } from "../services/categoryService";

@@ -1,4 +1,4 @@
-import Modal from "./Modal";
+import Modal from "./ui/Modal";
 import { Printer, ShoppingBag, CreditCard, Calendar, User } from "lucide-react";
 
 export default function TransactionDetailModal({ isOpen, onClose, transaction }) {

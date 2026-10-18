@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import Sidebar from "../layouts/Sidebar";
 import Navbar from "../layouts/Navbar";
 import CategoryFormModal from "../components/CategoryFormModal";
-import ConfirmModal from "../components/ConfirmModal";
+import ConfirmModal from "../components/ui/ConfirmModal";
 import { Plus, Search } from "lucide-react";
 import CategoryAccordion from "../components/CategoryAccordion";
 import { getCategory, createCategory, updateCategory, deleteCategory } from "../services/categoryService.js";
