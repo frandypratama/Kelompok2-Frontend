@@ -1,4 +1,4 @@
-import { API_URL } from "../services/api";
+import { API_URL } from "../../services/api";
 
 export default function PosProductCard({ product, onAddToCart, availableStock, currentQty }) {
   const isOutOfStock = availableStock <= 0;
