@@ -13,8 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import api from "../services/api";
-import Sidebar from "../layouts/Sidebar";
+import api from "../../services/api";
+import Sidebar from "../../layouts/Sidebar";
 
 const formatRupiah = (value) =>
   new Intl.NumberFormat("id-ID", {

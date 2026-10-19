@@ -14,10 +14,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import api from "../services/api";
-import Sidebar from "../layouts/Sidebar";
-import Navbar from "../layouts/Navbar";
-import TransactionDetailModal from "../components/TransactionDetailModal";
+import api from "../../services/api";
+import Sidebar from "../../layouts/Sidebar";
+import Navbar from "../../layouts/Navbar";
+import TransactionDetailModal from "../../components/TransactionDetailModal";
 
 export default function LaporanPenjualan() {
   const [transactions, setTransactions] = useState([]);

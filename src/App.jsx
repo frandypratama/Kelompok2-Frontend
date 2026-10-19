@@ -6,11 +6,11 @@ import User from "./pages/User";
 import Product from "./pages/Product";
 import Category from "./pages/Category";
 import HomePage from "./pages/HomePage";
-import LaporanPenjualan from "./pages/Report";
+import LaporanPenjualan from "./pages/Reports/Report";
 import Pos from "./pages/Pos";
 import TransactionHistory from "./pages/TransactionHistory";
 import ProtectedRoute from "./components/ProtectedRoute";
-import LaporanUangKeluar from "./pages/LaporanUangKeluar";
+import LaporanUangKeluar from "./pages/Reports/LaporanUangKeluar";
 
 // Komponen pembatas: Jika sudah login, dilarang masuk ke halaman login/landing
 function PublicOnlyRoute({ children }) {
