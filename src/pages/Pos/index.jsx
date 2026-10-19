@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
-import PosProductCard from "../components/PosProductCard";
-import PosCartItem from "../components/PosCartItem";
-import InvoiceModal from "../components/InvoiceModal";
-import Pagination from "../components/Pagination";
+import Sidebar from "../../layouts/Sidebar";
+import Navbar from "../../layouts/Navbar";
+import PosProductCard from "./PosProductCard";
+import PosCartItem from "./PosCartItem";
+import InvoiceModal from "./InvoiceModal";
+import Pagination from "../../components/ui/Pagination";
 import { Search, ShoppingCart, CreditCard, Banknote, QrCode, ArrowLeftRight, Loader2 } from "lucide-react";
-import { getProducts } from "../services/productService";
-import { getCategory } from "../services/categoryService";
-import { createTransaction } from "../services/transactionService";
+import { getProducts } from "../../services/productService";
+import { getCategory } from "../../services/categoryService";
+import { createTransaction } from "../../services/transactionService";
 
 export default function Pos() {
   const [products, setProducts] = useState([]);

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import Modal from "./Modal";
-import InputField from "./ui/InputField";
+import Modal from "../../components/ui/Modal";
+import InputField from "../../components/ui/InputField";
 
 export default function UserFormModal({
   isOpen,

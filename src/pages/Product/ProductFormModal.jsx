@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import Modal from "./Modal";
-import InputField from "./ui/InputField";
-import { API_URL } from "../services/api";
+import Modal from "../../components/ui/Modal";
+import InputField from "../../components/ui/InputField";
+import { API_URL } from "../../services/api";
 
 export default function ProductFormModal({
   isOpen,

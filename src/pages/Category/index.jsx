@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
-import CategoryFormModal from "../components/CategoryFormModal";
-import ConfirmModal from "../components/ConfirmModal";
+import Sidebar from "../../layouts/Sidebar";
+import Navbar from "../../layouts/Navbar";
+import CategoryFormModal from "./CategoryFormModal";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 import { Plus, Search } from "lucide-react";
-import CategoryAccordion from "../components/CategoryAccordion";
-import { getCategory, createCategory, updateCategory, deleteCategory } from "../services/categoryService.js";
+import CategoryAccordion from "./CategoryAccordion";
+import { getCategory, createCategory, updateCategory, deleteCategory } from "../../services/categoryService.js";
 
 export default function Category() {
   const [categories, setCategories] = useState([]);
