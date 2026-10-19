@@ -5,7 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import User from "./pages/User";
 import Product from "./pages/Product";
 import Category from "./pages/Category";
-import HomePage from "./pages/homePage";
+import HomePage from "./pages/HomePage";
 import LaporanPenjualan from "./pages/Report";
 import Pos from "./pages/Pos";
 import TransactionHistory from "./pages/TransactionHistory";
